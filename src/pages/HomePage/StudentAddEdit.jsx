@@ -477,7 +477,8 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
                     id="doc-upload"
                     type="file"
                     multiple
-                    accept="image/*,application/pdf"
+                    // accept="image/*,application/pdf"
+                    accept="image/*"
                     style={{ display: 'none' }}
                     onChange={handleFilesPicked}
                   />
