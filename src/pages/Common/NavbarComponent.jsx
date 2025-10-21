@@ -2,11 +2,12 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Avatar from '@mui/material/Avatar';
-import { ListItemText } from '@mui/material';
+import { CircularProgress, ListItemText } from '@mui/material';
 import ButtonBase from '@mui/material/ButtonBase';
 import { useCallback, useEffect, useState } from 'react';
 import { useFirebase } from '../../context/Firebase';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
+import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
 
 const NavbarComponent = () => {
   const firebaseContext = useFirebase();
@@ -56,34 +57,6 @@ const NavbarComponent = () => {
     loadFromLocalStorage();
   }, [loadFromLocalStorage]);
 
-  const uploadToCloudinary = async (file) => {
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    if (!uploadPreset || !cloudName) {
-      throw new Error(
-        'Cloudinary upload preset or cloud name not configured. Set VITE_CLOUDINARY_UPLOAD_PRESET and VITE_CLOUDINARY_CLOUD_NAME.'
-      );
-    }
-
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', uploadPreset);
-
-    fd.append('folder', 'admin/profile');
-
-    const res = await fetch(url, {
-      method: 'POST',
-      body: fd,
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Cloudinary upload failed: ${res.status} ${text}`);
-    }
-    const json = await res.json();
-    return json;
-  };
-
   const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -92,7 +65,7 @@ const NavbarComponent = () => {
         setUploading(true);
 
         // Upload to Cloudinary
-        const result = await uploadToCloudinary(file);
+        const result = await uploadToCloudinary(file, 'admin/profile');
         firebaseContext
           .updateDocument('admin', adminData.id, { profile_image: result.secure_url || result.url })
           .then((response) => {
@@ -127,26 +100,67 @@ const NavbarComponent = () => {
           outline: '2px solid',
           outlineOffset: '2px',
         },
+        display: 'inline-flex',
       }}
     >
-      <Avatar alt="Upload new avatar" src={adminData?.profile_image} />
-      <input
-        type="file"
-        accept="image/*"
-        style={{
-          border: 0,
-          clip: 'rect(0 0 0 0)',
-          height: '1px',
-          margin: '-1px',
-          overflow: 'hidden',
-          padding: 0,
-          position: 'absolute',
-          whiteSpace: 'nowrap',
-          width: '1px',
+      <Box
+        sx={{
+          position: 'relative',
+          width: 56, // outer size (spinner diameter)
+          height: 56,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
-        onChange={handleAvatarChange}
-        disabled={uploading}
-      />
+      >
+        {/* spinner — shown only while uploading */}
+        {uploading && (
+          <CircularProgress
+            size={56}
+            thickness={2}
+            color="inherit"
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              // keep spinner behind the avatar
+              zIndex: 0,
+            }}
+          />
+        )}
+
+        {/* avatar sits centered above the spinner */}
+        <Avatar
+          alt="Upload new avatar"
+          src={adminData?.profile_image}
+          sx={{
+            width: 40, // avatar size (smaller than spinner)
+            height: 40,
+            zIndex: 1,
+            // optionally add a subtle border so it stands out over spinner
+            border: (theme) => `2px solid ${theme.palette.background.paper}`,
+          }}
+        />
+
+        {/* hidden file input */}
+        <input
+          type="file"
+          accept="image/*"
+          style={{
+            border: 0,
+            clip: 'rect(0 0 0 0)',
+            height: '1px',
+            margin: '-1px',
+            overflow: 'hidden',
+            padding: 0,
+            position: 'absolute',
+            whiteSpace: 'nowrap',
+            width: '1px',
+          }}
+          onChange={handleAvatarChange}
+          disabled={uploading}
+        />
+      </Box>
     </ButtonBase>
   );
   return (
