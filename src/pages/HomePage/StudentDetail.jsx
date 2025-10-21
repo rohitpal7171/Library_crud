@@ -10,9 +10,15 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  Tooltip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { formatDate, formatFileSize } from '../../utils/utils';
+import { useState } from 'react';
+import { CloudDownloadOutlined, CloudUploadOutlined } from '@mui/icons-material';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 
 export default function StudentDetail({ open, onClose, student = {} }) {
   const initials = (student.studentName || 'Student')
@@ -21,6 +27,61 @@ export default function StudentDetail({ open, onClose, student = {} }) {
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  const [downloading, setDownloading] = useState(false);
+  const [, setProgress] = useState({ done: 0, total: 0 });
+  const { showSnackbar } = useSnackbar();
+
+  const handleDownloadAll = async () => {
+    if (!student?.documents?.length) return;
+    setDownloading(true);
+    setProgress({ done: 0, total: student?.documents.length, percent: 0 });
+
+    try {
+      const zip = new JSZip();
+      let filesFetched = 0;
+
+      // 1️⃣ fetch & add files to zip
+      await Promise.all(
+        student.documents.map(async (doc, idx) => {
+          try {
+            const res = await fetch(doc.url, { mode: 'cors' });
+            const blob = await res.blob();
+            const fileName = doc.originalName?.replace(/\s+/g, '_') || `file_${idx + 1}`;
+            zip.file(fileName, blob);
+            // update progress for fetched files
+            filesFetched += 1;
+            setProgress((prev) => ({
+              ...prev,
+              done: prev.done + 1,
+            }));
+          } catch (err) {
+            console.error('Error fetching file:', err);
+          }
+        })
+      );
+
+      // 2️⃣ generate zip blob (with compression progress)
+      const content = await zip.generateAsync({ type: 'blob' }, (meta) => {
+        setProgress((prev) => ({
+          ...prev,
+          percent: meta?.percent,
+        }));
+      });
+      // 3️⃣ save it
+      saveAs(content, `${student?.studentName ?? 'documents'}_files.zip`);
+      showSnackbar({
+        severity: 'success',
+        message: `Downloaded ${filesFetched}/${student.documents.length} documents successfully!`,
+      });
+    } catch (error) {
+      setDownloading(false);
+      console.error('Download all error:', error);
+    } finally {
+      setDownloading(false);
+      setProgress({ done: 0, total: 0, percent: 0 });
+    }
+  };
 
   const info = [
     { label: 'Student Name', value: student.studentName || '—' },
@@ -99,9 +160,35 @@ export default function StudentDetail({ open, onClose, student = {} }) {
 
           {/* Documents Section */}
           <Box sx={{ px: 1.5, py: 2, mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
-              Documents
-            </Typography>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
+            >
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
+                Documents
+              </Typography>
+              <Box>
+                <Tooltip title="Download all images">
+                  <IconButton
+                    onClick={handleDownloadAll}
+                    disabled={!student?.documents?.length || downloading}
+                    aria-label="Download all documents"
+                    loading={downloading}
+                  >
+                    <CloudDownloadOutlined />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Upload all images">
+                  <IconButton
+                    // onClick={handleDownloadAll}
+                    // disabled={!student?.documents?.length}
+                    disabled
+                    aria-label="Upload all documents"
+                  >
+                    <CloudUploadOutlined />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
             {student?.documents && student?.documents?.length ? (
               <List dense={true}>
                 {student?.documents?.map((doc, index) => (
