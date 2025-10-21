@@ -131,6 +131,22 @@ export const FirebaseProvider = (props) => {
   //   []
   // );
 
+  // cloud Database - get admin document
+  const getAdminData = async () => {
+    try {
+      const adminRef = collection(firebaseCloudFirestore, 'admin');
+      const snapshot = await getDocs(adminRef);
+
+      if (snapshot.empty) return null;
+
+      const doc = snapshot.docs[0];
+      return { id: doc.id, ...doc.data() };
+    } catch (error) {
+      console.error('Error fetching admin data:', error);
+      return null;
+    }
+  };
+
   // const getDocumentsByQuery = useCallback(
   //   async (
   //     collectionName = 'students',
@@ -390,10 +406,14 @@ export const FirebaseProvider = (props) => {
     try {
       const documentRef = doc(firebaseCloudFirestore, collectionName, docId);
       await updateDoc(documentRef, partialData);
-      return { success: true };
+      const updatedSnapshot = await getDoc(documentRef);
+      if (!updatedSnapshot.exists()) {
+        return { success: false, error: 'Document does not exist after update.' };
+      }
+      return { success: true, data: { id: updatedSnapshot.id, ...updatedSnapshot.data() } };
     } catch (err) {
       console.error('updateDocument error', err);
-      return { error: err };
+      return { success: false, error: err };
     }
   }, []);
 
@@ -499,6 +519,7 @@ export const FirebaseProvider = (props) => {
     firebaseSignUpUserWithEmailAndPassword: signUpUserWithEmailAndPassword,
     firebaseSignInUserWithEmailAndPassword: signInUserWithEmailAndPassword,
     firebaseSignInWithGoogle: signInWithGoogle,
+    firebaseGetAdminData: getAdminData,
 
     // Firestore generics
     createDataInFireStore,
