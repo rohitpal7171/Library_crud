@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, styled } from '@mui/material';
+import { Button, styled, CircularProgress } from '@mui/material';
 
 const BaseButton = styled(Button, {
   shouldForwardProp: (prop) => prop !== 'colorType' && prop !== 'variantProp',
@@ -81,6 +81,7 @@ const CustomButton = React.forwardRef(
       fullWidth = false,
       disabled = false,
       onClick,
+      loading = false,
       ...rest
     },
     ref
@@ -90,17 +91,23 @@ const CustomButton = React.forwardRef(
         ref={ref}
         variant={variant}
         size={size}
-        startIcon={startIcon}
-        endIcon={endIcon}
+        startIcon={loading ? undefined : startIcon}
+        endIcon={loading ? undefined : endIcon}
         onClick={onClick}
-        disabled={disabled}
+        disabled={disabled || loading}
         fullWidth={fullWidth}
         colorType={colorType}
         variantProp={variant}
-        sx={sx}
+        sx={{
+          position: 'relative',
+          ...sx,
+          '& .MuiCircularProgress-root': {
+            color: variant === 'contained' ? '#fff' : 'inherit', // ✅ white spinner for contained
+          },
+        }}
         {...rest}
       >
-        {children}
+        {loading ? <CircularProgress size={22} thickness={4} /> : children}
       </BaseButton>
     );
   }

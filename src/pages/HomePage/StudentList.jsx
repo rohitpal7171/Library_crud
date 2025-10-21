@@ -8,6 +8,7 @@ import {
   useTheme,
   useMediaQuery,
   Avatar,
+  Tooltip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -118,7 +119,7 @@ export default function StudentList(props) {
       {
         field: 'studentName',
         headerName: 'Student',
-        flex: 1,
+        flex: 1.5,
         minWidth: 180,
         renderCell: (params) => (
           <Box
@@ -135,26 +136,27 @@ export default function StudentList(props) {
             />
 
             <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Typography
-                variant="caption"
-                component="a"
-                onClick={() => handleStudentDetail(params.row)}
-                sx={{
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  color: 'primary.main',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
-                }}
-              >
-                {safeValue(params.value)}
-              </Typography>
-
+              <Tooltip title={params.row.studentName ?? ''} placement="top" arrow>
+                <Typography
+                  variant="caption"
+                  component="a"
+                  onClick={() => handleStudentDetail(params.row)}
+                  sx={{
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    color: 'primary.main',
+                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  {safeValue(params.value)}
+                </Typography>
+              </Tooltip>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <PhoneIcon sx={{ fontSize: 15, color: '#4CAF50' }} />
                 <Typography
@@ -309,7 +311,7 @@ export default function StudentList(props) {
     });
 
     return cols;
-  }, [isXs, isMd, onEditDirect, onDeleteDirect, openMenu]);
+  }, [isXs, isMd, onEditDirect, onDeleteDirect, openMenu, handleStudentDetail]);
 
   const innerHeight = 'calc(75vh - 16px)';
 

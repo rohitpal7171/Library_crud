@@ -5,25 +5,14 @@ import {
   IconButton,
   Avatar,
   Divider,
-  Chip,
   Stack,
-  Tooltip,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
-import CustomButton from '../../components/customComponents/CustomButton';
-
-const formatDate = (s) => {
-  if (!s) return '—';
-  try {
-    const d = new Date(s);
-    if (isNaN(d.getTime())) return s;
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch (e) {
-    console.log('error while formatting date', e);
-    return s;
-  }
-};
+import { formatDate, formatFileSize } from '../../utils/utils';
 
 export default function StudentDetail({ open, onClose, student = {} }) {
   const initials = (student.studentName || 'Student')
@@ -109,23 +98,24 @@ export default function StudentDetail({ open, onClose, student = {} }) {
           ))}
 
           {/* Documents Section */}
-          <Box sx={{ px: 1.5, py: 2 }}>
+          <Box sx={{ px: 1.5, py: 2, mt: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
               Documents
             </Typography>
-            {student.documents && student.documents.length ? (
-              <Stack direction="row" gap={1} flexWrap="wrap">
-                {student.documents.map((doc, idx) => (
-                  <Chip
-                    key={idx}
-                    icon={<DocumentScannerIcon />}
-                    label={doc}
-                    size="small"
-                    clickable
-                    sx={{ mr: 0.5, mb: 0.5 }}
-                  />
+            {student?.documents && student?.documents?.length ? (
+              <List dense={true}>
+                {student?.documents?.map((doc, index) => (
+                  <ListItem key={index}>
+                    <ListItemAvatar>
+                      <Avatar src={doc?.url ?? ''} />
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={doc?.originalName ?? 'Unknown Document'}
+                      secondary={formatFileSize(doc?.size)}
+                    />
+                  </ListItem>
                 ))}
-              </Stack>
+              </List>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 No documents uploaded

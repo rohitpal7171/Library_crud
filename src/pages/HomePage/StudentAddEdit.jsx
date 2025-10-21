@@ -23,6 +23,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { useFirebase } from '../../context/Firebase';
 import CustomButton from '../../components/customComponents/CustomButton';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
+import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
 
 const defaultValues = {
   studentName: '',
@@ -65,7 +66,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
       // make sure editData keys match defaultValues
       reset({ ...defaultValues, ...editData });
       // if editData has documents, set them into preview
-      if (editData.documents) setFiles(editData.documents || []);
+      // if (editData.documents) setFiles(editData.documents || []);
     } else {
       reset(defaultValues);
       setFiles([]);
@@ -104,37 +105,80 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
     onClose && onClose();
   };
 
-  const submit = (data) => {
+  const submit = async (data) => {
     setFormLoading(true);
-    console.log('submitted data', data);
+
     if (type === 'ADD') {
-      //   const payload = { ...data, documents: files };
-      //   onSubmit && onSubmit(payload);
+      const modifiedData = {
+        ...data,
+        documents: [],
+      };
       firebaseContext
-        .createDataInFireStore('students', data)
-        .then(() => {
-          setFormLoading(false);
-          showSnackbar({ severity: 'success', message: 'Student Added Successfully!' });
-          handleClose();
+        .createDataInFireStore('students', modifiedData)
+        .then(async (response) => {
+          if (files?.length) {
+            let generatedDataId = response?.data?.id;
+            if (!generatedDataId)
+              return showSnackbar({ severity: 'error', message: 'Error Generating Student ID!' });
+            const uploadPromises = Array.from(files).map(async (file) => {
+              const result = await uploadToCloudinary(
+                file,
+                `students/documents/${generatedDataId}`
+              );
+              const url = result?.secure_url ?? result?.url;
+              return {
+                originalName: file.name,
+                url,
+                mimeType: file.type,
+                size: file.size,
+                uploadedAt: new Date().toISOString(),
+              };
+            });
+
+            const uploadedFilesURL = await Promise.all(uploadPromises);
+            firebaseContext
+              .updateDocument('students', generatedDataId, { documents: uploadedFilesURL })
+              .then(() => {
+                setFormLoading(false);
+                fetchStudentData?.();
+                showSnackbar({ severity: 'success', message: 'Student Added Successfully!' });
+                handleClose();
+              })
+              .catch((err) => {
+                showSnackbar({
+                  severity: 'error',
+                  message: err?.message ?? 'Error Updating Profile Image!',
+                });
+              });
+          } else {
+            setFormLoading(false);
+            fetchStudentData?.();
+            showSnackbar({ severity: 'success', message: 'Student Added Successfully!' });
+            handleClose();
+          }
         })
         .catch((err) => {
           console.log(err);
+          setFormLoading(false);
           showSnackbar({ severity: 'error', message: 'Error Adding Student!' });
         });
     } else if (type === 'EDIT') {
+      // eslint-disable-next-line no-unused-vars
+      const { documents, ...restData } = data;
       firebaseContext
-        .updateDocument('students', data.id, data)
+        .updateDocument('students', data.id, restData)
         .then(() => {
           setFormLoading(false);
+          fetchStudentData?.();
           showSnackbar({ severity: 'success', message: 'Student Updated Successfully!' });
           handleClose();
         })
         .catch((err) => {
           console.log(err);
+          setFormLoading(false);
           showSnackbar({ severity: 'error', message: 'Error Updating Student!' });
         });
     }
-    fetchStudentData?.();
   };
 
   // small layout helpers
@@ -155,7 +199,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
       </DialogTitle>
       <IconButton
         aria-label="close"
-        onClick={handleClose}
+        onClick={() => handleClose()}
         sx={{
           position: 'absolute',
           right: 8,
@@ -469,14 +513,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
         </DialogContent>
 
         <DialogActions sx={{ px: 3, py: 2 }}>
-          <CustomButton
-            variant="outlined"
-            colorType="danger"
-            onClick={() => {
-              reset(defaultValues);
-              setFiles([]);
-            }}
-          >
+          <CustomButton variant="outlined" colorType="danger" onClick={() => handleClose()}>
             Close
           </CustomButton>
 
