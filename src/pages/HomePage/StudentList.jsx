@@ -255,7 +255,8 @@ export default function StudentList(props) {
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              color: 'text.secondary',
+              color: 'text.primary',
+              marginTop: '20px',
             }}
             title={safeValue(p.row.address)}
           >
