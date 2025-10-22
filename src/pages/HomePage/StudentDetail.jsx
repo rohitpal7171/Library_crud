@@ -100,6 +100,7 @@ export default function StudentDetail({ open, onClose, student = {} }) {
       label: 'Locker',
       value: student.locker ? `Assigned • #${student.lockerNumber || '—'}` : 'No locker',
     },
+    { label: 'Folder Id', value: student.id || '—' },
     { label: 'Address', value: student.address || '—' },
   ];
 

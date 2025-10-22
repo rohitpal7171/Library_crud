@@ -242,6 +242,13 @@ export default function StudentList(props) {
         width: 90,
         renderCell: (p) => safeValue(p.value),
       });
+      cols.push({
+        field: 'documents',
+        headerName: 'Documents',
+        flex: 0.8,
+        width: 80,
+        renderCell: (p) => p.row?.documents?.length ?? 0,
+      });
 
       cols.push({
         field: 'address',
