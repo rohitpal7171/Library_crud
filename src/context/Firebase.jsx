@@ -26,6 +26,8 @@ import {
   startAfter,
   deleteDoc,
   serverTimestamp,
+  setDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 
 const FirebaseContext = createContext(null);
@@ -422,6 +424,21 @@ export const FirebaseProvider = (props) => {
     try {
       if (!docId) throw new Error('Document ID is required for deletion.');
 
+      //Reference to the tracking document
+      const trackingDocRef = doc(firebaseCloudFirestore, 'willDeleteLaterInCloudinary', 'log');
+
+      // Ensure the tracking document exists (or create it)
+      const trackingDocSnap = await getDoc(trackingDocRef);
+      if (!trackingDocSnap.exists()) {
+        await setDoc(trackingDocRef, { folders: [] });
+      }
+
+      //Push the docId into folders array
+      await updateDoc(trackingDocRef, {
+        folders: arrayUnion(docId),
+      });
+
+      // Delete the original document
       const docRef = doc(firebaseCloudFirestore, collectionName, docId);
       await deleteDoc(docRef);
 
