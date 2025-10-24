@@ -22,6 +22,7 @@ import { useFirebase } from '../../context/Firebase';
 import StudentAddEdit from './StudentAddEdit';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import StudentDetail from './StudentDetail';
+import CustomSwitch from '../../components/customComponents/CustomSwitch';
 
 const safeValue = (val) => (val ? val : '--');
 
@@ -109,6 +110,27 @@ export default function StudentList(props) {
     },
     [setSelectedStudentForEdit]
   );
+
+  const onToggleActive = async (item) => {
+    try {
+      setLoading(true);
+      const response = await firebaseContext.updateDocument('students', item.id, {
+        active: !item.active,
+      });
+      if (response?.success) {
+        setLoading(false);
+        showSnackbar({
+          severity: 'success',
+          message: 'Student Active Status Updated Successfully!',
+        });
+        fetchStudentData();
+      }
+    } catch (err) {
+      setLoading(false);
+      showSnackbar({ severity: 'error', message: 'Error Updating Student Active Status!' });
+      console.log(err);
+    }
+  };
 
   const columns = useMemo(() => {
     const cols = [
@@ -274,11 +296,17 @@ export default function StudentList(props) {
     cols.push({
       field: 'actions',
       headerName: 'Actions',
+      flex: 0.8,
       width: 100,
       renderCell: (params) => {
         if (!isXs) {
           return (
             <Box sx={{ display: 'flex', gap: 1, marginTop: '20px' }}>
+              <CustomSwitch
+                checked={params.row.active}
+                onChange={() => onToggleActive(params.row)}
+                inputProps={{ 'aria-label': 'toggle active' }}
+              />
               <IconButton
                 size="small"
                 color="primary"
