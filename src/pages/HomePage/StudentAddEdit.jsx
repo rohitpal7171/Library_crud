@@ -37,10 +37,12 @@ const defaultValues = {
   seatNumber: 0,
   locker: false,
   lockerNumber: 0,
-  timings: '6 hours',
+  timings: '6',
   address: '',
   documents: [],
   studentProfile: '',
+  aadhaarNumber: '',
+  active: true,
 };
 
 const MAX_FILES = 5;
@@ -158,9 +160,8 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
           }
         })
         .catch((err) => {
-          console.log(err);
           setFormLoading(false);
-          showSnackbar({ severity: 'error', message: 'Error Adding Student!' });
+          showSnackbar({ severity: 'error', message: err?.message ?? 'Error Adding Student!' });
         });
     } else if (type === 'EDIT') {
       // eslint-disable-next-line no-unused-vars
@@ -327,12 +328,51 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
             </Grid>
 
             <Grid item size={{ xs: 12, sm: 6 }}>
-              <Typography sx={labelSx}>Referred By</Typography>
+              <Typography sx={labelSx}>Aadhaar Number</Typography>
               <Controller
-                name="referredBy"
+                name="aadhaarNumber"
                 control={control}
-                render={({ field }) => (
-                  <TextField {...field} placeholder="e.g., Anil (Student)" fullWidth size="small" />
+                // rules={{
+                //   // required: 'Aadhaar number is required',
+                //   pattern: {
+                //     value: /^[2-9]{1}[0-9]{11}$/,
+                //     message: 'Enter a valid 12-digit Aadhaar number',
+                //   },
+                //   validate: {
+                //     lengthCheck: (value) =>
+                //       value.length === 12 || 'Aadhaar number must be 12 digits',
+                //   },
+                // }}
+                rules={{
+                  pattern: {
+                    value: /^[2-9]{1}[0-9]{11}$/,
+                    message: 'Enter a valid 12-digit Aadhaar number',
+                  },
+                  validate: (value) => {
+                    if (!value) return true; // ✅ No Aadhaar entered — skip validation
+                    if (!/^[2-9]{1}[0-9]{11}$/.test(value)) {
+                      return 'Enter a valid 12-digit Aadhaar number';
+                    }
+                    if (value.length !== 12) {
+                      return 'Aadhaar number must be 12 digits';
+                    }
+                    return true;
+                  },
+                }}
+                render={({ field, fieldState: { error } }) => (
+                  <TextField
+                    {...field}
+                    placeholder="e.g., 123456789012"
+                    fullWidth
+                    size="small"
+                    error={!!error}
+                    helperText={error ? error.message : ''}
+                    inputProps={{
+                      maxLength: 12,
+                      inputMode: 'numeric',
+                      pattern: '[0-9]*',
+                    }}
+                  />
                 )}
               />
             </Grid>
@@ -363,8 +403,27 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
               />
             </Grid>
 
+            <Grid item size={{ xs: 12, sm: 6 }}>
+              <Typography sx={labelSx}>Timings</Typography>
+              <Controller
+                name="timings"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    placeholder="6 hours"
+                    fullWidth
+                    size="small"
+                    error={!!errors.timings}
+                    helperText={errors.timings?.message || ''}
+                  />
+                )}
+              />
+            </Grid>
+
+            {/* Row 5 - Seat Reserved */}
             <Grid item size={{ xs: 12, sm: 6 }} container alignItems="center">
-              <Grid item size={{ xs: 5 }}>
+              <Grid item size={{ xs: 6 }}>
                 <Controller
                   name="seatReserved"
                   control={control}
@@ -377,7 +436,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
                 />
               </Grid>
               {seatReservedValue && (
-                <Grid item size={{ xs: 7 }}>
+                <Grid item size={{ xs: 6 }}>
                   <Typography sx={labelSx}>Seat Number</Typography>
                   <Controller
                     name="seatNumber"
@@ -398,24 +457,8 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
               )}
             </Grid>
 
-            {/* Row 5 - Timings */}
-            <Grid item size={{ xs: 12, sm: 6 }}>
-              <Typography sx={labelSx}>Timings</Typography>
-              <Controller
-                name="timings"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select size="small" fullWidth>
-                    <MenuItem value="4 hours">4 hours</MenuItem>
-                    <MenuItem value="6 hours">6 hours</MenuItem>
-                    <MenuItem value="8 hours">8 hours</MenuItem>
-                  </TextField>
-                )}
-              />
-            </Grid>
-
             <Grid item size={{ xs: 12, sm: 6 }} container alignItems="center">
-              <Grid item size={{ xs: 4 }}>
+              <Grid item size={{ xs: 6 }}>
                 <Controller
                   name="locker"
                   control={control}
@@ -428,7 +471,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
                 />
               </Grid>
               {lockerValue && (
-                <Grid item size={{ xs: 8 }}>
+                <Grid item size={{ xs: 6 }}>
                   <Typography sx={labelSx}>Locker Number</Typography>
                   <Controller
                     name="lockerNumber"

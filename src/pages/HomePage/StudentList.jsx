@@ -35,10 +35,6 @@ export default function StudentList(props) {
     fetchStudentData,
     selectedStudentForEdit,
     setSelectedStudentForEdit,
-    // selectedStudentIds,
-    // setSelectedStudentIds,
-    // setExcludedStudentIds,
-    // setSelectAll,
     studentRowSelectionModel,
     setStudentRowSelectionModel,
   } = props;
@@ -181,8 +177,8 @@ export default function StudentList(props) {
       cols.push({
         field: 'fatherName',
         headerName: 'Parent',
-        flex: 0.9,
-        minWidth: 140,
+        flex: 0.8,
+        minWidth: 90,
         renderCell: (p) => safeValue(p.value),
       });
 
@@ -190,8 +186,8 @@ export default function StudentList(props) {
       cols.push({
         field: 'dateOfBirth',
         headerName: 'DOB',
-        flex: 0.8,
-        width: 120,
+        flex: 0.6,
+        width: 80,
         renderCell: (p) => safeValue(p.value),
       });
       cols.push({
@@ -207,7 +203,7 @@ export default function StudentList(props) {
       cols.push({
         field: 'gender',
         headerName: 'Gender',
-        width: 120,
+        width: 100,
         flex: 0.8,
         renderCell: (p) =>
           p.value ? (
@@ -229,24 +225,24 @@ export default function StudentList(props) {
       cols.push({
         field: 'seatNumber',
         headerName: 'Seat',
-        width: 100,
-        flex: 0.8,
+        width: 90,
+        flex: 0.6,
         renderCell: (p) => (p.value ? `Reserved (${safeValue(p.row.seatNumber)})` : '--'),
       });
 
     if (isMd) {
       cols.push({
-        field: 'timings',
-        headerName: 'Timings',
-        flex: 0.8,
-        width: 90,
+        field: 'aadhaarNumber',
+        headerName: 'Aadhaar Number',
+        flex: 1,
+        width: 120,
         renderCell: (p) => safeValue(p.value),
       });
       cols.push({
         field: 'documents',
         headerName: 'Documents',
-        flex: 0.8,
-        width: 80,
+        flex: 0.6,
+        width: 70,
         renderCell: (p) => p.row?.documents?.length ?? 0,
       });
 
@@ -254,7 +250,7 @@ export default function StudentList(props) {
         field: 'address',
         headerName: 'Address',
         flex: 1,
-        minWidth: 180,
+        minWidth: 160,
         sortable: false,
         filterable: false,
         renderCell: (p) => (

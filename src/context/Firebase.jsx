@@ -71,6 +71,18 @@ export const FirebaseProvider = (props) => {
         ...data,
         modifiedAt: serverTimestamp(),
       };
+      // If aadhaar is present — run a query to check uniqueness
+      if (data?.aadhaarNumber) {
+        const q = query(
+          collection(firebaseCloudFirestore, collectionName),
+          where('aadhaarNumber', '==', data?.aadhaarNumber)
+        );
+        const snap = await getDocs(q);
+        if (snap.docs.length > 0) {
+          // found at least one document with this aadhaar -> refuse
+          throw new Error('A student with this Aadhaar number already exists.');
+        }
+      }
       const results = await addDoc(
         collection(firebaseCloudFirestore, collectionName),
         modifiedData
@@ -78,7 +90,7 @@ export const FirebaseProvider = (props) => {
       return { data: results };
     } catch (err) {
       console.error('addDocument error', err);
-      return { error: err };
+      throw err;
     }
   }, []);
 

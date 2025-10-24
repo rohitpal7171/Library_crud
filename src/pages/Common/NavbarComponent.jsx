@@ -2,14 +2,16 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
 import Avatar from '@mui/material/Avatar';
-import { CircularProgress, ListItemText } from '@mui/material';
+import { CircularProgress, IconButton, ListItemText } from '@mui/material';
 import ButtonBase from '@mui/material/ButtonBase';
 import { useCallback, useEffect, useState } from 'react';
 import { useFirebase } from '../../context/Firebase';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
+import { MenuOutlined } from '@mui/icons-material';
 
-const NavbarComponent = () => {
+const NavbarComponent = (props) => {
+  const { onDrawerOpen } = props;
   const firebaseContext = useFirebase();
   const { showSnackbar } = useSnackbar();
 
@@ -56,6 +58,18 @@ const NavbarComponent = () => {
   useEffect(() => {
     loadFromLocalStorage();
   }, [loadFromLocalStorage]);
+
+  const drawerIcon = (
+    <IconButton
+      color="secondary"
+      size="large"
+      edge="start"
+      onClick={onDrawerOpen}
+      sx={{ color: 'white' }}
+    >
+      <MenuOutlined />
+    </IconButton>
+  );
 
   const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
@@ -163,10 +177,12 @@ const NavbarComponent = () => {
       </Box>
     </ButtonBase>
   );
+
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static">
+      <AppBar position="fixed">
         <Toolbar>
+          {drawerIcon} &nbsp;
           {profileImage}
           &emsp;
           <ListItemText

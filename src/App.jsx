@@ -3,6 +3,8 @@ import { useFirebase } from './context/Firebase';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage/HomePage';
 import './App.css';
+import Dashboard from './pages/HomePage/Dashboard';
+import StudentDashboard from './pages/HomePage/StudentDashboard';
 
 function App() {
   const { user, loading } = useFirebase();
@@ -19,7 +21,10 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<HomePage />}>
+        <Route index element={<Dashboard />} />
+        <Route path="students" element={<StudentDashboard />} />
+      </Route>
     </Routes>
   );
 }
