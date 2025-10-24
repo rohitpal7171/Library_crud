@@ -149,7 +149,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
               .catch((err) => {
                 showSnackbar({
                   severity: 'error',
-                  message: err?.message ?? 'Error Updating Profile Image!',
+                  message: err?.message ?? 'Error Uploading Documents!',
                 });
               });
           } else {
@@ -177,7 +177,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
         .catch((err) => {
           console.log(err);
           setFormLoading(false);
-          showSnackbar({ severity: 'error', message: 'Error Updating Student!' });
+          showSnackbar({ severity: 'error', message: err?.message ?? 'Error Updating Student!' });
         });
     }
   };

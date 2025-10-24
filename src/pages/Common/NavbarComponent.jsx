@@ -94,7 +94,10 @@ const NavbarComponent = (props) => {
             });
           });
       } catch (err) {
-        alert('Upload failed: ' + err.message);
+        showSnackbar({
+          severity: 'error',
+          message: err?.message ?? 'Error Updating Profile Image!',
+        });
       } finally {
         setUploading(false);
         event.target.value = '';

@@ -418,8 +418,24 @@ export const FirebaseProvider = (props) => {
   // cloud Database - update data
   const updateDocument = useCallback(async (collectionName = 'students', docId, partialData) => {
     try {
+      if (partialData?.aadhaarNumber) {
+        const q = query(
+          collection(firebaseCloudFirestore, collectionName),
+          where('aadhaarNumber', '==', partialData.aadhaarNumber)
+        );
+        const snap = await getDocs(q);
+
+        // If any doc exists with same aadhaar but different id -> conflict
+        const conflict = snap.docs.find((d) => d.id !== docId);
+        if (conflict) {
+          throw new Error('Another student with this Aadhaar number already exists.');
+        }
+      }
       const documentRef = doc(firebaseCloudFirestore, collectionName, docId);
-      await updateDoc(documentRef, partialData);
+      await updateDoc(documentRef, {
+        ...partialData,
+        modifiedAt: serverTimestamp(),
+      });
       const updatedSnapshot = await getDoc(documentRef);
       if (!updatedSnapshot.exists()) {
         return { success: false, error: 'Document does not exist after update.' };
@@ -427,7 +443,7 @@ export const FirebaseProvider = (props) => {
       return { success: true, data: { id: updatedSnapshot.id, ...updatedSnapshot.data() } };
     } catch (err) {
       console.error('updateDocument error', err);
-      return { success: false, error: err };
+      throw new Error(err);
     }
   }, []);
 
