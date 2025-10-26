@@ -14,13 +14,22 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { formatDate, formatFileSize } from '../../utils/utils';
-import { useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { CloudDownloadOutlined, CloudUploadOutlined } from '@mui/icons-material';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
+import { UploadDocuments } from './../Common/UploadDocuments';
+import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
+import { useFirebase } from '../../context/Firebase';
 
-export default function StudentDetail({ open, onClose, student = {} }) {
+export default function StudentDetail({ open, onClose, parentStudent = {}, fetchStudentData }) {
+  const [student, setStudent] = useState({});
+  const [downloading, setDownloading] = useState(false);
+  const [openUploadDocumentSection, setOpenUploadDocumentSection] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [, setProgress] = useState({ done: 0, total: 0 });
+
   const initials = (student.studentName || 'Student')
     .split(' ')
     .map((p) => p[0])
@@ -28,9 +37,20 @@ export default function StudentDetail({ open, onClose, student = {} }) {
     .slice(0, 2)
     .toUpperCase();
 
-  const [downloading, setDownloading] = useState(false);
-  const [, setProgress] = useState({ done: 0, total: 0 });
+  const firebaseContext = useFirebase();
   const { showSnackbar } = useSnackbar();
+
+  const fetchStudentDetail = useCallback(async () => {
+    const response = await firebaseContext.getDocumentById('students', parentStudent.id);
+    if (response?.id) {
+      setStudent(response.data);
+    }
+  }, [firebaseContext, parentStudent]);
+
+  useEffect(() => {
+    if (!parentStudent.id) return;
+    fetchStudentDetail();
+  }, [parentStudent.id, fetchStudentDetail]);
 
   const handleDownloadAll = async () => {
     if (!student?.documents?.length) return;
@@ -83,6 +103,42 @@ export default function StudentDetail({ open, onClose, student = {} }) {
     }
   };
 
+  const handleUploadAll = async (files) => {
+    if (!files?.length)
+      return showSnackbar({ severity: 'error', message: 'Please select files to upload!' });
+    let generatedDataId = student?.id;
+    if (!generatedDataId)
+      return showSnackbar({ severity: 'error', message: 'Error Generating Student ID!' });
+    const uploadPromises = Array.from(files).map(async (file) => {
+      const result = await uploadToCloudinary(file, `students/documents/${generatedDataId}`);
+      const url = result?.secure_url ?? result?.url;
+      return {
+        originalName: file.name,
+        url,
+        mimeType: file.type,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+    });
+
+    const uploadedFilesURL = await Promise.all(uploadPromises);
+    firebaseContext
+      .updateDocument('students', generatedDataId, { documents: uploadedFilesURL })
+      .then(() => {
+        setUploading(false);
+        fetchStudentDetail?.();
+        fetchStudentData?.();
+        showSnackbar({ severity: 'success', message: 'Document Uploaded Successfully!' });
+        setOpenUploadDocumentSection(false);
+      })
+      .catch((err) => {
+        showSnackbar({
+          severity: 'error',
+          message: err?.message ?? 'Error Uploading Documents!',
+        });
+      });
+  };
+
   const info = [
     { label: 'Student Name', value: student.studentName || '—' },
     { label: 'Father Name', value: student.fatherName || '—' },
@@ -105,122 +161,139 @@ export default function StudentDetail({ open, onClose, student = {} }) {
   ];
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '92%', sm: 480 } } }}
-    >
-      <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar
-              alt={initials}
-              src={student?.studentProfile ? student?.studentProfile : initials}
-              sx={{ width: 50, height: 50, bgcolor: 'primary.main', fontSize: 24 }}
-            />
-            <Box>
-              <Typography variant="h6">{student.studentName || 'Unnamed Student'}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {student.studentProfile || 'No profile description provided.'}
-              </Typography>
-            </Box>
-          </Stack>
-
-          <IconButton onClick={onClose} aria-label="close">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-
-        <Divider sx={{ mb: 1 }} />
-
-        {/* Info Section */}
-        <Box sx={{ overflowY: 'auto', flex: 1 }}>
-          {info.map((item, index) => (
-            <Box
-              key={index}
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                py: 1,
-                px: 1.5,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, flex: 1 }}>
-                {item.label}
-              </Typography>
-              <Typography variant="body1" color="text.primary" sx={{ flex: 1, textAlign: 'right' }}>
-                {item.value}
-              </Typography>
-            </Box>
-          ))}
-
-          {/* Documents Section */}
-          <Box sx={{ px: 1.5, py: 2, mt: 2 }}>
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
-            >
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
-                Documents
-              </Typography>
+    <Fragment>
+      {openUploadDocumentSection && (
+        <UploadDocuments
+          open={openUploadDocumentSection}
+          handleClose={() => setOpenUploadDocumentSection(false)}
+          handleUploadAll={handleUploadAll}
+          uploading={uploading}
+          setUploading={setUploading}
+        />
+      )}
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={onClose}
+        PaperProps={{ sx: { width: { xs: '92%', sm: 480 } } }}
+      >
+        <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Header */}
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
+          >
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar
+                alt={initials}
+                // src={student?.studentProfile ? student?.studentProfile : initials}
+                sx={{ width: 50, height: 50, bgcolor: 'primary.main', fontSize: 24 }}
+              >
+                {initials}
+              </Avatar>
               <Box>
-                <Tooltip title="Download all images">
-                  <IconButton
-                    onClick={handleDownloadAll}
-                    disabled={!student?.documents?.length || downloading}
-                    aria-label="Download all documents"
-                    loading={downloading}
-                  >
-                    <CloudDownloadOutlined />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Upload all images">
-                  <IconButton
-                    // onClick={handleDownloadAll}
-                    // disabled={!student?.documents?.length}
-                    disabled
-                    aria-label="Upload all documents"
-                  >
-                    <CloudUploadOutlined />
-                  </IconButton>
-                </Tooltip>
+                <Typography variant="h6">{student.studentName || 'Unnamed Student'}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {student.studentProfile || 'No profile description provided.'}
+                </Typography>
               </Box>
+            </Stack>
+
+            <IconButton onClick={onClose} aria-label="close">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Divider sx={{ mb: 1 }} />
+
+          {/* Info Section */}
+          <Box sx={{ overflowY: 'auto', flex: 1 }}>
+            {info.map((item, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  py: 1,
+                  px: 1.5,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, flex: 1 }}
+                >
+                  {item.label}
+                </Typography>
+                <Typography
+                  variant="body1"
+                  color="text.primary"
+                  sx={{ flex: 1, textAlign: 'right' }}
+                >
+                  {item.value}
+                </Typography>
+              </Box>
+            ))}
+
+            {/* Documents Section */}
+            <Box sx={{ px: 1.5, py: 2, mt: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 1,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 1 }}>
+                  Documents
+                </Typography>
+                <Box>
+                  <Tooltip title="Download all images">
+                    <IconButton
+                      onClick={handleDownloadAll}
+                      disabled={!student?.documents?.length || downloading}
+                      aria-label="Download all documents"
+                      loading={downloading}
+                    >
+                      <CloudDownloadOutlined />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Upload all images">
+                    <IconButton
+                      onClick={() => setOpenUploadDocumentSection(true)}
+                      aria-label="Upload all documents"
+                    >
+                      <CloudUploadOutlined />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+              {student?.documents && student?.documents?.length ? (
+                <List dense={true}>
+                  {student?.documents?.map((doc, index) => (
+                    <ListItem key={index}>
+                      <ListItemAvatar>
+                        <Avatar src={doc?.url ?? ''} />
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={doc?.originalName ?? 'Unknown Document'}
+                        secondary={formatFileSize(doc?.size)}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No documents uploaded
+                </Typography>
+              )}
             </Box>
-            {student?.documents && student?.documents?.length ? (
-              <List dense={true}>
-                {student?.documents?.map((doc, index) => (
-                  <ListItem key={index}>
-                    <ListItemAvatar>
-                      <Avatar src={doc?.url ?? ''} />
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={doc?.originalName ?? 'Unknown Document'}
-                      secondary={formatFileSize(doc?.size)}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No documents uploaded
-              </Typography>
-            )}
           </Box>
         </Box>
-
-        <Divider sx={{ mt: 1 }} />
-
-        {/* Footer */}
-        {/* <Box sx={{ display: 'flex', gap: 1, mt: 1, justifyContent: 'space-between' }}>
-          <Tooltip title="Edit student">
-            <Chip label="Edit" clickable />
-          </Tooltip>
-        </Box> */}
-      </Box>
-    </Drawer>
+      </Drawer>
+    </Fragment>
   );
 }

@@ -111,26 +111,29 @@ export default function StudentList(props) {
     [setSelectedStudentForEdit]
   );
 
-  const onToggleActive = async (item) => {
-    try {
-      setLoading(true);
-      const response = await firebaseContext.updateDocument('students', item.id, {
-        active: !item.active,
-      });
-      if (response?.success) {
-        setLoading(false);
-        showSnackbar({
-          severity: 'success',
-          message: 'Student Active Status Updated Successfully!',
+  const onToggleActive = useCallback(
+    async (item) => {
+      try {
+        setLoading(true);
+        const response = await firebaseContext.updateDocument('students', item.id, {
+          active: !item.active,
         });
-        fetchStudentData();
+        if (response?.success) {
+          setLoading(false);
+          showSnackbar({
+            severity: 'success',
+            message: 'Student Active Status Updated Successfully!',
+          });
+          fetchStudentData();
+        }
+      } catch (err) {
+        setLoading(false);
+        showSnackbar({ severity: 'error', message: 'Error Updating Student Active Status!' });
+        console.log(err);
       }
-    } catch (err) {
-      setLoading(false);
-      showSnackbar({ severity: 'error', message: 'Error Updating Student Active Status!' });
-      console.log(err);
-    }
-  };
+    },
+    [firebaseContext, fetchStudentData, setLoading, showSnackbar]
+  );
 
   const columns = useMemo(() => {
     const cols = [
@@ -139,59 +142,69 @@ export default function StudentList(props) {
         headerName: 'Student',
         flex: 1.5,
         minWidth: 180,
-        renderCell: (params) => (
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 2,
-              marginTop: '20px',
-            }}
-          >
-            <Avatar
-              alt={params.row.studentName}
-              src={params?.row?.studentProfile ? params.row.studentProfile : params.row.studentName}
-              sx={{ bgcolor: 'primary.main' }}
-            />
+        renderCell: (params) => {
+          const initials = (params.row.studentName || 'Student')
+            .split(' ')
+            .map((p) => p[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase();
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2,
+                marginTop: '20px',
+              }}
+            >
+              <Avatar
+                alt={params.row.studentName}
+                // src={params?.row?.studentProfile ? params.row.studentProfile : params.row.studentName}
+                sx={{ bgcolor: 'primary.main' }}
+              >
+                {initials}
+              </Avatar>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <Tooltip title={params.row.studentName ?? ''} placement="top" arrow>
-                <Typography
-                  variant="caption"
-                  component="a"
-                  onClick={() => handleStudentDetail(params.row)}
-                  sx={{
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    color: 'primary.main',
-                    cursor: 'pointer',
-                    textDecoration: 'none',
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  {safeValue(params.value)}
-                </Typography>
-              </Tooltip>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PhoneIcon sx={{ fontSize: 15, color: '#4CAF50' }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {safeValue(params.row.phoneNumber)}
-                </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <Tooltip title={params.row.studentName ?? ''} placement="top" arrow>
+                  <Typography
+                    variant="caption"
+                    component="a"
+                    onClick={() => handleStudentDetail(params.row)}
+                    sx={{
+                      fontWeight: 700,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      color: 'primary.main',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    {safeValue(params.value)}
+                  </Typography>
+                </Tooltip>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <PhoneIcon sx={{ fontSize: 15, color: '#4CAF50' }} />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {safeValue(params.row.phoneNumber)}
+                  </Typography>
+                </Box>
               </Box>
             </Box>
-          </Box>
-        ),
+          );
+        },
       },
     ];
 
@@ -342,7 +355,7 @@ export default function StudentList(props) {
     });
 
     return cols;
-  }, [isXs, isMd, onEditDirect, onDeleteDirect, openMenu, handleStudentDetail]);
+  }, [isXs, isMd, handleStudentDetail, onToggleActive, onEditDirect, onDeleteDirect, openMenu]);
 
   const innerHeight = 'calc(75vh - 16px)';
 
@@ -371,7 +384,8 @@ export default function StudentList(props) {
         <StudentDetail
           open={openStudentDetail}
           onClose={() => handleCloseStudentDetail()}
-          student={selectedStudentForEdit}
+          parentStudent={selectedStudentForEdit}
+          fetchStudentData={fetchStudentData}
         />
       )}
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>
