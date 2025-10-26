@@ -1,5 +1,4 @@
 import { Fragment, useCallback, useState } from 'react';
-// import { useOutletContext } from 'react-router-dom';
 import FilterAndActions from './FilterAndActions';
 import StudentList from './StudentList';
 import { useFirebase } from '../../context/Firebase';
@@ -7,8 +6,6 @@ import { Box, Tab, Tabs } from '@mui/material';
 import { defaultBorderColor, defaultBoxPadding } from '../../utils/utils';
 
 const StudentDashboard = () => {
-  //   const { propsForStudentList, propsForAddEditForm } = useOutletContext();
-
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageSize, setPageSize] = useState(1000);
@@ -22,6 +19,7 @@ const StudentDashboard = () => {
     ids: new Set(),
   });
   const [tabValue, setTabValue] = useState('active');
+  const [serverFilters, setServerFilters] = useState([['active', '==', true]]);
 
   const firebaseContext = useFirebase();
 
@@ -51,9 +49,12 @@ const StudentDashboard = () => {
     let filters = null;
     if (newValue === 'active') {
       filters = [{ field: 'active', operator: '==', value: true }];
+      setServerFilters(filters);
     } else if (newValue === 'inactive') {
       filters = [{ field: 'active', operator: '==', value: false }];
+      setServerFilters(filters);
     }
+    setServerFilters(filters);
     fetchStudentData(filters);
   };
 
@@ -89,12 +90,14 @@ const StudentDashboard = () => {
     setSelectAll,
     studentRowSelectionModel,
     setStudentRowSelectionModel,
+    serverFilters,
   };
 
   const propsForAddEditForm = {
     fetchStudentData,
     excludedStudentIds,
     selectAll,
+    serverFilters,
   };
 
   return (

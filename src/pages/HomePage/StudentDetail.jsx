@@ -23,7 +23,13 @@ import { UploadDocuments } from './../Common/UploadDocuments';
 import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
 import { useFirebase } from '../../context/Firebase';
 
-export default function StudentDetail({ open, onClose, parentStudent = {}, fetchStudentData }) {
+export default function StudentDetail({
+  open,
+  onClose,
+  parentStudent = {},
+  fetchStudentData,
+  serverFilters,
+}) {
   const [student, setStudent] = useState({});
   const [downloading, setDownloading] = useState(false);
   const [openUploadDocumentSection, setOpenUploadDocumentSection] = useState(false);
@@ -127,7 +133,7 @@ export default function StudentDetail({ open, onClose, parentStudent = {}, fetch
       .then(() => {
         setUploading(false);
         fetchStudentDetail?.();
-        fetchStudentData?.();
+        fetchStudentData?.(serverFilters);
         showSnackbar({ severity: 'success', message: 'Document Uploaded Successfully!' });
         setOpenUploadDocumentSection(false);
       })

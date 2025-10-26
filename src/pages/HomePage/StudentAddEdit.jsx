@@ -46,7 +46,14 @@ const defaultValues = {
 
 const MAX_FILES = 5;
 
-const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentData }) => {
+const StudentAddEdit = ({
+  open,
+  onClose,
+  editData,
+  type = 'ADD',
+  fetchStudentData,
+  serverFilters,
+}) => {
   const { control, handleSubmit, reset, setValue, watch, formState } = useForm({
     defaultValues,
   });
@@ -141,7 +148,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
               .updateDocument('students', generatedDataId, { documents: uploadedFilesURL })
               .then(() => {
                 setFormLoading(false);
-                fetchStudentData?.();
+                fetchStudentData?.(serverFilters);
                 showSnackbar({ severity: 'success', message: 'Student Added Successfully!' });
                 handleClose();
               })
@@ -153,7 +160,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
               });
           } else {
             setFormLoading(false);
-            fetchStudentData?.();
+            fetchStudentData?.(serverFilters);
             showSnackbar({ severity: 'success', message: 'Student Added Successfully!' });
             handleClose();
           }
@@ -169,7 +176,7 @@ const StudentAddEdit = ({ open, onClose, editData, type = 'ADD', fetchStudentDat
         .updateDocument('students', data.id, restData)
         .then(() => {
           setFormLoading(false);
-          fetchStudentData?.();
+          fetchStudentData?.(serverFilters);
           showSnackbar({ severity: 'success', message: 'Student Updated Successfully!' });
           handleClose();
         })

@@ -38,6 +38,7 @@ export default function StudentList(props) {
     setSelectedStudentForEdit,
     studentRowSelectionModel,
     setStudentRowSelectionModel,
+    serverFilters,
   } = props;
 
   const theme = useTheme();
@@ -53,8 +54,8 @@ export default function StudentList(props) {
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
-    fetchStudentData({ filters: [['active', '==', true]] });
-  }, [fetchStudentData]);
+    fetchStudentData({ filters: serverFilters });
+  }, [fetchStudentData, serverFilters]);
 
   const openMenu = useCallback((event, row) => {
     setMenuAnchorEl(event.currentTarget);
@@ -82,7 +83,7 @@ export default function StudentList(props) {
         if (response?.success) {
           setLoading(false);
           showSnackbar({ severity: 'success', message: 'Student Deleted Successfully!' });
-          fetchStudentData();
+          fetchStudentData(serverFilters);
         }
       } catch (err) {
         setLoading(false);
@@ -90,7 +91,7 @@ export default function StudentList(props) {
         console.log(err);
       }
     },
-    [firebaseContext, fetchStudentData, setLoading, showSnackbar]
+    [setLoading, firebaseContext, showSnackbar, fetchStudentData, serverFilters]
   );
 
   const handleEdit = useCallback(() => {
@@ -124,7 +125,7 @@ export default function StudentList(props) {
             severity: 'success',
             message: 'Student Active Status Updated Successfully!',
           });
-          fetchStudentData();
+          fetchStudentData(serverFilters);
         }
       } catch (err) {
         setLoading(false);
@@ -132,7 +133,7 @@ export default function StudentList(props) {
         console.log(err);
       }
     },
-    [firebaseContext, fetchStudentData, setLoading, showSnackbar]
+    [firebaseContext, fetchStudentData, setLoading, showSnackbar, serverFilters]
   );
 
   const columns = useMemo(() => {
@@ -386,6 +387,7 @@ export default function StudentList(props) {
           onClose={() => handleCloseStudentDetail()}
           parentStudent={selectedStudentForEdit}
           fetchStudentData={fetchStudentData}
+          serverFilters={serverFilters}
         />
       )}
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>

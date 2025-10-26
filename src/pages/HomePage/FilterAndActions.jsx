@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Box, FormControl, TextField, InputAdornment, Typography } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { Box, Typography } from '@mui/material';
 import { defaultBoxPadding } from '../../utils/utils';
 import CustomButton from '../../components/customComponents/CustomButton';
 import StudentAddEdit from './StudentAddEdit';
 
 const FilterAndActions = (props) => {
-  const { fetchStudentData } = props;
+  const { fetchStudentData, serverFilters } = props;
 
   // const [searchValue, setSearchValue] = useState('');
   const [openAddForm, setOpenAddForm] = useState(false);
@@ -26,6 +25,7 @@ const FilterAndActions = (props) => {
           open={openAddForm}
           onClose={() => setOpenAddForm(false)}
           fetchStudentData={fetchStudentData}
+          serverFilters={serverFilters}
         />
       )}
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>
