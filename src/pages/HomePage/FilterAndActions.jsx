@@ -89,7 +89,7 @@ const FilterAndActions = (props) => {
             />
           </FormControl> */}
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="h6" sx={{ fontWeight: '500' }}>
               Student Records
             </Typography>
           </Box>

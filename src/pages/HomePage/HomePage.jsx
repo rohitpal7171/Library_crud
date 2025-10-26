@@ -54,6 +54,7 @@ const HomePage = () => {
             ml: `${leftOffset}px`,
             boxSizing: 'border-box',
             minHeight: '100vh',
+            background:'#f6f7fb'
           };
         }}
       >

@@ -22,3 +22,5 @@ export const formatDate = (s) => {
     return s;
   }
 };
+
+export const defaultCheckValue = (v) => v !== undefined && v !== null && v !== '';

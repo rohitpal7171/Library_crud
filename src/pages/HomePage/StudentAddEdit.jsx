@@ -12,7 +12,6 @@ import {
   Checkbox,
   RadioGroup,
   Radio,
-  MenuItem,
   Button,
   Typography,
   InputAdornment,

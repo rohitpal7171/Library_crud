@@ -215,8 +215,8 @@ export default function StudentList(props) {
       cols.push({
         field: 'dateOfJoining',
         headerName: 'DOJ',
-        flex: 0.8,
-        width: 120,
+        flex: 0.6,
+        width: 80,
         renderCell: (p) => safeValue(p.value),
       });
     }
@@ -271,8 +271,8 @@ export default function StudentList(props) {
       cols.push({
         field: 'address',
         headerName: 'Address',
-        flex: 1,
-        minWidth: 160,
+        flex: 0.8,
+        minWidth: 140,
         sortable: false,
         filterable: false,
         renderCell: (p) => (
@@ -296,7 +296,7 @@ export default function StudentList(props) {
     cols.push({
       field: 'actions',
       headerName: 'Actions',
-      flex: 0.8,
+      flex: 1,
       width: 100,
       renderCell: (params) => {
         if (!isXs) {
