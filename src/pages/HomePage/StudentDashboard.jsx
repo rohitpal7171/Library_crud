@@ -3,6 +3,8 @@ import { Fragment, useCallback, useState } from 'react';
 import FilterAndActions from './FilterAndActions';
 import StudentList from './StudentList';
 import { useFirebase } from '../../context/Firebase';
+import { Box, Tab, Tabs } from '@mui/material';
+import { defaultBorderColor, defaultBoxPadding } from '../../utils/utils';
 
 const StudentDashboard = () => {
   //   const { propsForStudentList, propsForAddEditForm } = useOutletContext();
@@ -19,23 +21,58 @@ const StudentDashboard = () => {
     type: 'include',
     ids: new Set(),
   });
+  const [tabValue, setTabValue] = useState('active');
 
   const firebaseContext = useFirebase();
 
-  const fetchStudentData = useCallback(() => {
-    setLoading(true);
-    firebaseContext
-      .getDocumentsByQuery()
-      .then((response) => {
-        setStudents(response?.data ?? []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setStudents([]);
-        setLoading(false);
-      });
-  }, [firebaseContext, setStudents, setLoading]);
+  const fetchStudentData = useCallback(
+    (filters) => {
+      setLoading(true);
+      firebaseContext
+        .getDocumentsByQuery({
+          collection: 'students',
+          filters: filters,
+        })
+        .then((response) => {
+          setStudents(response?.data ?? []);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.log(err);
+          setStudents([]);
+          setLoading(false);
+        });
+    },
+    [firebaseContext, setStudents, setLoading]
+  );
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    let filters = null;
+    if (newValue === 'active') {
+      filters = [{ field: 'active', operator: '==', value: true }];
+    } else if (newValue === 'inactive') {
+      filters = [{ field: 'active', operator: '==', value: false }];
+    }
+    fetchStudentData(filters);
+  };
+
+  const tabSection = (
+    <Box sx={{ pl: defaultBoxPadding, pr: defaultBoxPadding }}>
+      <Tabs
+        value={tabValue}
+        onChange={handleTabChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        aria-label="scrollable auto tabs example"
+        sx={{ border: `1px solid ${defaultBorderColor}`, borderRadius: 2 }}
+      >
+        <Tab value="active" label="Active Students" />
+        <Tab value="inactive" label="Inactive Students" />
+        <Tab value="all" label="All Students" />
+      </Tabs>
+    </Box>
+  );
 
   const propsForStudentList = {
     students,
@@ -63,6 +100,7 @@ const StudentDashboard = () => {
   return (
     <Fragment>
       <FilterAndActions {...propsForAddEditForm} />
+      <Box>{tabSection}</Box>
       <StudentList {...propsForStudentList} />
     </Fragment>
   );

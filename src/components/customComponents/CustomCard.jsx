@@ -11,7 +11,7 @@ import {
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import { Link as RouterLink } from 'react-router-dom';
-import { defaultCheckValue } from '../../utils/utils';
+import { defaultBorderColor, defaultCheckValue } from '../../utils/utils';
 
 const defaultFormatCount = (v) => v;
 
@@ -25,7 +25,7 @@ export function StatCard({
   to = '',
   tooltipHtml = '',
   icon: Icon = DescriptionOutlinedIcon,
-  borderColor = '#d9d9d9',
+  borderColor = defaultBorderColor,
   height = 70,
   cardPadding = 2,
   grid = { xs: 12, sm: 6, md: 3 }, // 25% at md and up

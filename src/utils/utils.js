@@ -1,4 +1,5 @@
 export const defaultBoxPadding = '20px';
+export const defaultBorderColor = '#d9d9d9';
 
 export const formatFileSize = (bytes) => {
   if (bytes === 0 || !bytes) return '0 KB';

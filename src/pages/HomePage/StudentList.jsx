@@ -53,7 +53,7 @@ export default function StudentList(props) {
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
-    fetchStudentData();
+    fetchStudentData({ filters: [['active', '==', true]] });
   }, [fetchStudentData]);
 
   const openMenu = useCallback((event, row) => {
@@ -439,8 +439,8 @@ export default function StudentList(props) {
             rowSelectionModel={studentRowSelectionModel}
             showToolbar
             density="comfortable"
-            rowHeight={64}
-            headerHeight={56}
+            rowHeight={60}
+            headerHeight={50}
             style={{ height: '100%', width: '100%' }}
             loading={loading}
             sx={{

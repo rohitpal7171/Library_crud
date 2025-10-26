@@ -205,26 +205,52 @@ export const FirebaseProvider = (props) => {
   const getDocumentsByQuery = useCallback(
     async ({
       collectionName = 'students',
-      filters = null,
-      orderField = 'modifiedAt', // sort field
-      orderDirection = 'desc', // or 'asc'
+      filters = null, // accepts object, tuple, array of either
+      orderField = 'modifiedAt',
+      orderDirection = 'desc',
       pageSize = 1000,
-      lastVisible = null, // for pagination
+      lastVisible = null,
     } = {}) => {
       try {
         const collectionRef = collection(firebaseCloudFirestore, collectionName);
 
-        // Normalize filters into array form
-        const normalizedFilters = !filters
-          ? []
-          : Array.isArray(filters) && Array.isArray(filters[0])
-          ? filters
-          : [filters];
+        // If caller passed `{ filters: {...} }` by mistake, unwrap it
+        if (filters && typeof filters === 'object' && 'filters' in filters) {
+          filters = filters.filters;
+        }
 
-        // Build query
-        const conditions = normalizedFilters.map(([f, op, v]) => where(f, op, v));
+        // Normalize to array of tuples [field, operator, value]
+        const toTuple = (f) => {
+          if (Array.isArray(f)) return f;
+          if (f && typeof f === 'object') {
+            return [f.field, f.operator || '==', f.value];
+          }
+          return [undefined, undefined, undefined]; // will be caught by validator
+        };
 
-        // Add ordering and pagination
+        const filterTuples =
+          filters == null ? [] : Array.isArray(filters) ? filters.map(toTuple) : [toTuple(filters)];
+
+        // Validate before building query (prevents _delegate crash)
+        const invalid = filterTuples.find(
+          (t) =>
+            !Array.isArray(t) ||
+            t.length < 3 ||
+            typeof t[0] !== 'string' ||
+            typeof t[1] !== 'string'
+        );
+        if (invalid) {
+          console.error('Invalid filter provided:', invalid, 'filters:', filters);
+          throw new Error(
+            "Invalid filter: expected ['field','==',value] or { field, operator, value }"
+          );
+        }
+        if (!orderField || typeof orderField !== 'string') {
+          throw new Error('orderField must be a non-empty string');
+        }
+
+        const conditions = filterTuples.map(([f, op, v]) => where(f, op, v));
+
         const q = query(
           collectionRef,
           ...conditions,
@@ -233,17 +259,15 @@ export const FirebaseProvider = (props) => {
           limit(pageSize)
         );
 
-        // Run query
         const snapshot = await getDocs(q);
         const docs = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data(),
         }));
 
-        // Return docs + pagination info
         return {
           data: docs,
-          lastVisible: snapshot.docs[snapshot.docs.length - 1],
+          lastVisible: snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null,
         };
       } catch (err) {
         console.error('queryDocuments error', err);

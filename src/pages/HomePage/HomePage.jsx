@@ -54,7 +54,7 @@ const HomePage = () => {
             ml: `${leftOffset}px`,
             boxSizing: 'border-box',
             minHeight: '100vh',
-            background:'#f6f7fb'
+            background: '#f6f7fb',
           };
         }}
       >
@@ -62,7 +62,7 @@ const HomePage = () => {
         {/* INNER wrapper ensures every page gets the same padding & shrink behavior */}
         <Box
           sx={{
-            p: 3, // consistent padding for all pages
+            p: 1, // consistent padding for all pages
             width: '100%',
             minHeight: 'calc(100vh - 64px)',
             boxSizing: 'border-box',
