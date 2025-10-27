@@ -219,13 +219,13 @@ export default function StudentList(props) {
       });
 
     if (isMd) {
-      cols.push({
-        field: 'dateOfBirth',
-        headerName: 'DOB',
-        flex: 0.6,
-        width: 80,
-        renderCell: (p) => safeValue(p.value),
-      });
+      // cols.push({
+      //   field: 'dateOfBirth',
+      //   headerName: 'DOB',
+      //   flex: 0.6,
+      //   width: 80,
+      //   renderCell: (p) => safeValue(p.value),
+      // });
       cols.push({
         field: 'dateOfJoining',
         headerName: 'DOJ',
@@ -260,10 +260,30 @@ export default function StudentList(props) {
     if (!isXs)
       cols.push({
         field: 'seatNumber',
-        headerName: 'Seat',
-        width: 90,
-        flex: 0.6,
-        renderCell: (p) => (p.value ? `Reserved (${safeValue(p.row.seatNumber)})` : '--'),
+        headerName: 'Seat | Locker',
+        width: 180,
+        flex: 0.8,
+        renderCell: (p) => {
+          const seat = p.row.seatNumber ? safeValue(p.row.seatNumber) : '--';
+          const locker = p.row.lockerNumber ? safeValue(p.row.lockerNumber) : '--';
+
+          if (!p.row.seatNumber && !p.row.lockerNumber) {
+            return '--';
+          }
+
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                lineHeight: 2,
+              }}
+            >
+              <span>Seat: {seat}</span>
+              <span>Locker: {locker}</span>
+            </Box>
+          );
+        },
       });
 
     if (isMd) {

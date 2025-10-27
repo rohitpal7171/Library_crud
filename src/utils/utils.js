@@ -19,6 +19,13 @@ export const defaultSchemaValues = {
   studentProfile: '',
   aadhaarNumber: '',
   active: true,
+  monthlyBilling: {
+    subscriptionType: 'month',
+    subscriptionDuration: 1,
+    basicFee: 0,
+    lockerFee: 0,
+    seatFee: 0,
+  },
 };
 
 export const formatFileSize = (bytes) => {

@@ -64,36 +64,6 @@ export const FirebaseProvider = (props) => {
 
   // ----------------- Firestore Database Generic Helpers ----------------------------------------------------------------
 
-  // cloud Database - to add document with data in collection
-  const createDataInFireStore = useCallback(async (collectionName = 'students', data) => {
-    try {
-      const modifiedData = {
-        ...data,
-        modifiedAt: serverTimestamp(),
-      };
-      // If aadhaar is present — run a query to check uniqueness
-      if (data?.aadhaarNumber) {
-        const q = query(
-          collection(firebaseCloudFirestore, collectionName),
-          where('aadhaarNumber', '==', data?.aadhaarNumber)
-        );
-        const snap = await getDocs(q);
-        if (snap.docs.length > 0) {
-          // found at least one document with this aadhaar -> refuse
-          throw new Error('A student with this Aadhaar number already exists.');
-        }
-      }
-      const results = await addDoc(
-        collection(firebaseCloudFirestore, collectionName),
-        modifiedData
-      );
-      return { data: results };
-    } catch (err) {
-      console.error('addDocument error', err);
-      throw err;
-    }
-  }, []);
-
   // cloud Database - to add document with data in subcollection
   const makeSubCollectionInFireStore = useCallback(async (parentPath, subcollectionName, data) => {
     try {
@@ -111,6 +81,48 @@ export const FirebaseProvider = (props) => {
       return { error: err };
     }
   }, []);
+
+  // cloud Database - to add document with data in collection
+  const createDataInFireStore = useCallback(
+    async (collectionName = 'students', data) => {
+      try {
+        const { monthlyBilling, ...restData } = data;
+        const modifiedData = {
+          ...restData,
+          modifiedAt: serverTimestamp(),
+        };
+        // If aadhaar is present — run a query to check uniqueness
+        if (data?.aadhaarNumber) {
+          const q = query(
+            collection(firebaseCloudFirestore, collectionName),
+            where('aadhaarNumber', '==', data?.aadhaarNumber)
+          );
+          const snap = await getDocs(q);
+          if (snap.docs.length > 0) {
+            // found at least one document with this aadhaar -> refuse
+            throw new Error('A student with this Aadhaar number already exists.');
+          }
+        }
+        const results = await addDoc(
+          collection(firebaseCloudFirestore, collectionName),
+          modifiedData
+        );
+
+        // create monthly billing subcollection
+        await makeSubCollectionInFireStore(`${collectionName}/${results.id}`, 'monthlyBilling', {
+          ...monthlyBilling,
+          studentId: results.id,
+          createdAt: serverTimestamp(),
+          modifiedAt: serverTimestamp(),
+        });
+        return { data: results };
+      } catch (err) {
+        console.error('addDocument error', err);
+        throw err;
+      }
+    },
+    [makeSubCollectionInFireStore]
+  );
 
   // cloud Database - to get single document by id
   const getDocumentById = useCallback(async (collectionName = 'students', docId) => {

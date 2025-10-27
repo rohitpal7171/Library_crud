@@ -16,6 +16,7 @@ import {
   Typography,
   InputAdornment,
   Chip,
+  MenuItem,
 } from '@mui/material';
 import { Close, CalendarToday, UploadFile } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
@@ -152,7 +153,7 @@ const StudentAddEdit = ({
         });
     } else if (type === 'EDIT') {
       // eslint-disable-next-line no-unused-vars
-      const { documents, ...restData } = data;
+      const { documents, monthlyBilling, ...restData } = data;
       firebaseContext
         .updateDocument('students', data.id, restData)
         .then(() => {
@@ -182,7 +183,7 @@ const StudentAddEdit = ({
       disableAutoFocus
       disableRestoreFocus
     >
-      <DialogTitle sx={{ pr: 6, fontWeight: 700 }}>
+      <DialogTitle id="scroll-dialog-title" sx={{ pr: 6, fontWeight: 700 }}>
         {type === 'EDIT' ? 'Edit Student' : 'Add Student'}
       </DialogTitle>
       <IconButton
@@ -199,7 +200,15 @@ const StudentAddEdit = ({
       </IconButton>
 
       <form onSubmit={handleSubmit(submit)} noValidate>
-        <DialogContent sx={{ pl: 5, pr: 5, pt: 1, pb: 1 }}>
+        <DialogContent
+          sx={{
+            pl: 5,
+            pr: 5,
+            pt: 1,
+            pb: 1,
+          }}
+          dividers
+        >
           <Grid container spacing={2}>
             {/* Row 1 */}
             <Grid item size={{ xs: 12, sm: 6 }}>
@@ -292,7 +301,7 @@ const StudentAddEdit = ({
               <Controller
                 name="dateOfJoining"
                 control={control}
-                // rules={{ required: 'Date of joining required' }}
+                rules={{ required: 'Date of joining required' }}
                 render={({ field }) => (
                   <TextField
                     {...field}
@@ -498,6 +507,116 @@ const StudentAddEdit = ({
               />
             </Grid>
 
+            {/* First Payment Section */}
+            {type !== 'EDIT' && (
+              <Grid container size={24}>
+                <Grid item size={24}>
+                  <Typography variant="subtitle1">Fees (First Payment)</Typography>
+                </Grid>
+
+                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Typography sx={labelSx}>Subscription Type</Typography>
+                  <Controller
+                    name="monthlyBilling.subscriptionType"
+                    control={control}
+                    rules={{ required: 'Subscription type is required' }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        select
+                        fullWidth
+                        size="small"
+                        placeholder="Select type"
+                        error={!!errors?.monthlyBilling?.subscriptionType}
+                        helperText={errors?.monthlyBilling?.subscriptionType?.message || ''}
+                      >
+                        <MenuItem value="month">Month</MenuItem>
+                        <MenuItem value="year">Year</MenuItem>
+                      </TextField>
+                    )}
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Typography sx={labelSx}>Subscription Duration</Typography>
+                  <Controller
+                    name="monthlyBilling.subscriptionDuration"
+                    control={control}
+                    defaultValue={1}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        placeholder="e.g., 1, 2, 3"
+                        fullWidth
+                        size="small"
+                        error={!!errors?.monthlyBilling?.subscriptionDuration}
+                        helperText={errors?.monthlyBilling?.subscriptionDuration?.message || ''}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
+                  <Typography sx={labelSx}>Basic Fee</Typography>
+                  <Controller
+                    name="monthlyBilling.basicFee"
+                    control={control}
+                    rules={{
+                      required: 'Basic fee is required',
+                      validate: (v) => Number(v) > 0 || 'Must be greater than 0',
+                    }}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        placeholder="e.g., 500"
+                        fullWidth
+                        size="small"
+                        error={!!errors?.monthlyBilling?.basicFee}
+                        helperText={errors?.monthlyBilling?.basicFee?.message || ''}
+                      />
+                    )}
+                  />
+                </Grid>
+                {seatReservedValue && (
+                  <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
+                    <Typography sx={labelSx}>Seat Fee</Typography>
+                    <Controller
+                      name="monthlyBilling.seatFee"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          placeholder="e.g.,100"
+                          fullWidth
+                          size="small"
+                          error={!!errors?.monthlyBilling?.seatFee}
+                          helperText={errors?.monthlyBilling?.seatFee?.message || ''}
+                        />
+                      )}
+                    />
+                  </Grid>
+                )}
+                {lockerValue && (
+                  <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
+                    <Typography sx={labelSx}>Locker Fee</Typography>
+                    <Controller
+                      name="monthlyBilling.lockerFee"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          placeholder="e.g., 100"
+                          fullWidth
+                          size="small"
+                          error={!!errors?.monthlyBilling?.lockerFee}
+                          helperText={errors?.monthlyBilling?.lockerFee?.message || ''}
+                        />
+                      )}
+                    />
+                  </Grid>
+                )}
+              </Grid>
+            )}
+
             {/* Upload Documents */}
             {type !== 'EDIT' && (
               <Grid item size={{ xs: 12 }}>
@@ -543,7 +662,17 @@ const StudentAddEdit = ({
           </Grid>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2 }}>
+        <DialogActions
+          sx={{
+            position: 'sticky',
+            bottom: 0,
+            backgroundColor: 'background.paper',
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+            px: 3,
+            py: 2,
+            zIndex: 1,
+          }}
+        >
           <CustomButton variant="outlined" colorType="danger" onClick={() => handleClose()}>
             Close
           </CustomButton>

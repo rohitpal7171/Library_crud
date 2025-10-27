@@ -7,7 +7,7 @@ import Dashboard from './pages/HomePage/Dashboard';
 import StudentDashboard from './pages/HomePage/StudentDashboard';
 
 function App() {
-  const { user, loading } = useFirebase();
+  const { user, loading } = useFirebase() || {};
 
   useEffect(() => {
     if (loading) return; // wait for auth to resolve
