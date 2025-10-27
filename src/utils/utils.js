@@ -1,3 +1,5 @@
+import { Typography } from '@mui/material';
+
 export const defaultBoxPadding = '20px';
 export const defaultBorderColor = '#d9d9d9';
 
@@ -92,4 +94,59 @@ export const computeNextPaymentDate = (startDate, type, duration) => {
   if (type === 'year') return addYearsPreserveDay(startDate, dur);
 
   return null;
+};
+
+// ✅ Converts Firestore Timestamp → JS Date safely
+export const firebaseTimestampToDate = (ts) => {
+  if (!ts) return null;
+
+  try {
+    // Already a JS Date
+    if (ts instanceof Date) return ts;
+
+    // Firestore Timestamp object
+    if (typeof ts === 'object' && 'seconds' in ts) {
+      const ms = ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+      return new Date(ms);
+    }
+
+    // String / number fallback
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+};
+
+export const formatFirebaseTimestamp = (ts, options = {}) => {
+  const date = firebaseTimestampToDate(ts);
+  if (!date) return '—';
+
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    ...options,
+  });
+};
+
+export const getDueDateDisplay = (timestamp) => {
+  const date = firebaseTimestampToDate(timestamp);
+  if (!date) return { text: '—', color: 'text.primary', fontWeight: 400 };
+
+  const today = new Date();
+  const diffDays = Math.floor((new Date(date) - today) / (1000 * 60 * 60 * 24));
+
+  let color = 'text.primary';
+  let fontWeight = 400;
+
+  if (diffDays < 0 || diffDays === 0) {
+    color = 'error.main';
+    fontWeight = 600;
+  } else if (diffDays <= 7) {
+    color = 'warning.main';
+    fontWeight = 600;
+  }
+
+  return { text: formatDate(date), color, fontWeight };
 };

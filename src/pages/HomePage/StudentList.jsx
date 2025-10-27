@@ -17,7 +17,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import MaleIcon from '@mui/icons-material/Male';
 import FemaleIcon from '@mui/icons-material/Female';
 import { DataGrid } from '@mui/x-data-grid';
-import { defaultBoxPadding, formatDate } from '../../utils/utils';
+import { defaultBoxPadding, formatDate, getDueDateDisplay } from '../../utils/utils';
 import { useFirebase } from '../../context/Firebase';
 import StudentAddEdit from './StudentAddEdit';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
@@ -289,17 +289,46 @@ export default function StudentList(props) {
     if (isMd) {
       cols.push({
         field: 'aadhaarNumber',
-        headerName: 'Aadhaar Number',
+        headerName: 'ID | Documents',
         flex: 1,
         width: 120,
-        renderCell: (p) => safeValue(p.value),
+        renderCell: (p) => {
+          const aadhaar = p.row.aadhaarNumber ? safeValue(p.row.aadhaarNumber) : '--';
+          const documents = p.row.documents?.length ?? 0;
+
+          if (!aadhaar && !documents) {
+            return '--';
+          }
+
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                lineHeight: 2,
+              }}
+            >
+              <span>Aadhaar: {aadhaar}</span>
+              <span>Documents: {documents}</span>
+            </Box>
+          );
+        },
       });
       cols.push({
-        field: 'documents',
-        headerName: 'Documents',
-        flex: 0.6,
-        width: 70,
-        renderCell: (p) => p.row?.documents?.length ?? 0,
+        field: 'monthlyBillingLatest.nextPaymentDate',
+        headerName: 'Due Date',
+        flex: 0.8,
+        width: 100,
+        renderCell: (p) => {
+          const { text, color, fontWeight } = getDueDateDisplay(
+            p.row?.monthlyBillingLatest?.nextPaymentDate
+          );
+          return (
+            <Typography color={color} fontWeight={fontWeight}>
+              {text}
+            </Typography>
+          );
+        },
       });
 
       cols.push({
@@ -389,8 +418,6 @@ export default function StudentList(props) {
     setOpenStudentDetail(false);
     setSelectedStudentForEdit(null);
   };
-
-  console.log('students', students);
 
   return (
     <React.Fragment>

@@ -89,6 +89,7 @@ export const FirebaseProvider = (props) => {
         const { monthlyBilling, ...restData } = data;
         const modifiedData = {
           ...restData,
+          createdAt: serverTimestamp(),
           modifiedAt: serverTimestamp(),
         };
         // If aadhaar is present — run a query to check uniqueness
@@ -243,7 +244,7 @@ export const FirebaseProvider = (props) => {
     async ({
       collectionName = 'students',
       filters = null, // accepts object, tuple, array of either
-      orderField = 'modifiedAt',
+      orderField = 'createdAt',
       orderDirection = 'desc',
       pageSize = 1000,
       lastVisible = null,
