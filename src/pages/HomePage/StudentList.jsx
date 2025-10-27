@@ -17,7 +17,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import MaleIcon from '@mui/icons-material/Male';
 import FemaleIcon from '@mui/icons-material/Female';
 import { DataGrid } from '@mui/x-data-grid';
-import { defaultBoxPadding } from '../../utils/utils';
+import { defaultBoxPadding, formatDate } from '../../utils/utils';
 import { useFirebase } from '../../context/Firebase';
 import StudentAddEdit from './StudentAddEdit';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
@@ -229,9 +229,9 @@ export default function StudentList(props) {
       cols.push({
         field: 'dateOfJoining',
         headerName: 'DOJ',
-        flex: 0.6,
-        width: 80,
-        renderCell: (p) => safeValue(p.value),
+        flex: 0.8,
+        width: 100,
+        renderCell: (p) => safeValue(formatDate(p.value)),
       });
     }
 
@@ -239,8 +239,8 @@ export default function StudentList(props) {
       cols.push({
         field: 'gender',
         headerName: 'Gender',
-        width: 100,
-        flex: 0.8,
+        width: 80,
+        flex: 0.6,
         renderCell: (p) =>
           p.value ? (
             <Box sx={{ display: 'flex', marginTop: '20px', gap: 1 }}>
@@ -262,7 +262,7 @@ export default function StudentList(props) {
         field: 'seatNumber',
         headerName: 'Seat | Locker',
         width: 180,
-        flex: 0.8,
+        flex: 0.7,
         renderCell: (p) => {
           const seat = p.row.seatNumber ? safeValue(p.row.seatNumber) : '--';
           const locker = p.row.lockerNumber ? safeValue(p.row.lockerNumber) : '--';
@@ -389,6 +389,8 @@ export default function StudentList(props) {
     setOpenStudentDetail(false);
     setSelectedStudentForEdit(null);
   };
+
+  console.log('students', students);
 
   return (
     <React.Fragment>

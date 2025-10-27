@@ -214,6 +214,31 @@ export const FirebaseProvider = (props) => {
   //   []
   // );
 
+  // Helper to fetch latest monthlyBilling doc for a student
+  const getLatestMonthlyBilling = async (studentId, collectionName = 'students') => {
+    const basePath = `${collectionName}/${studentId}/monthlyBilling`;
+    const colRef = collection(firebaseCloudFirestore, basePath);
+
+    try {
+      // Fallback to createdAt desc
+      const q2 = query(colRef, orderBy('createdAt', 'desc'), limit(1));
+      const s2 = await getDocs(q2);
+      if (!s2.empty) return { id: s2.docs[0].id, ...s2.docs[0].data() };
+    } catch (_) {
+      console.log('failed to fetch latest monthly billing doc for studentId:', studentId);
+    }
+
+    // Last fallback — grab any one doc
+    try {
+      const s3 = await getDocs(query(colRef, limit(1)));
+      if (!s3.empty) return { id: s3.docs[0].id, ...s3.docs[0].data() };
+    } catch (_) {
+      console.log('failed to fetch any monthly billing doc for studentId:', studentId);
+    }
+
+    return null;
+  };
+
   const getDocumentsByQuery = useCallback(
     async ({
       collectionName = 'students',
@@ -272,10 +297,21 @@ export const FirebaseProvider = (props) => {
         );
 
         const snapshot = await getDocs(q);
-        const docs = snapshot.docs.map((docSnap) => ({
+        let docs = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data(),
         }));
+
+        // Enrich with latest monthlyBilling doc
+        const enriched = await Promise.allSettled(
+          docs.map(async (d) => {
+            const latestBilling = await getLatestMonthlyBilling(d.id, collectionName);
+            return { ...d, monthlyBillingLatest: latestBilling };
+          })
+        );
+        docs = enriched.map((res, i) =>
+          res.status === 'fulfilled' ? res.value : { ...docs[i], monthlyBillingLatest: null }
+        );
 
         return {
           data: docs,

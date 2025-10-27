@@ -24,7 +24,7 @@ import { useFirebase } from '../../context/Firebase';
 import CustomButton from '../../components/customComponents/CustomButton';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
-import { defaultSchemaValues } from '../../utils/utils';
+import { computeNextPaymentDate, defaultSchemaValues, formatDate } from '../../utils/utils';
 
 const MAX_FILES = 5;
 
@@ -49,6 +49,12 @@ const StudentAddEdit = ({
 
   const seatReservedValue = watch('seatReserved');
   const lockerValue = watch('locker');
+  const subType = watch('monthlyBilling.subscriptionType');
+  const subDuration = watch('monthlyBilling.subscriptionDuration');
+  const dateOfJoining = watch('dateOfJoining');
+
+  const startDate = dateOfJoining ? new Date(dateOfJoining) : null;
+  const nextDue = computeNextPaymentDate(startDate, subType, subDuration);
 
   // prefill for edit
   useEffect(() => {
@@ -102,6 +108,10 @@ const StudentAddEdit = ({
       const modifiedData = {
         ...data,
         documents: [],
+        monthlyBilling: {
+          ...data.monthlyBilling,
+          nextPaymentDate: nextDue,
+        },
       };
       firebaseContext
         .createDataInFireStore('students', modifiedData)
@@ -542,6 +552,23 @@ const StudentAddEdit = ({
                     name="monthlyBilling.subscriptionDuration"
                     control={control}
                     defaultValue={1}
+                    rules={{
+                      required: 'Duration is required',
+                      validate: (v) => {
+                        const num = Number(v);
+                        if (!num || Number.isNaN(num)) return 'Enter a valid number';
+                        if (subType === 'year') {
+                          if (num < 1 || num > 12)
+                            return 'For yearly, duration must be 1–12 (years)';
+                        } else if (subType === 'month') {
+                          if (num < 1 || num > 31)
+                            return 'For monthly, duration must be 1–31 (months)';
+                        } else {
+                          return 'Select subscription type first';
+                        }
+                        return true;
+                      },
+                    }}
                     render={({ field }) => (
                       <TextField
                         {...field}
@@ -614,6 +641,11 @@ const StudentAddEdit = ({
                     />
                   </Grid>
                 )}
+                <Grid item size={24} sx={{ color: 'red' }}>
+                  {nextDue
+                    ? `Note: Next payment will be due on ${formatDate(nextDue)}.`
+                    : 'Note: Next payment date will appear after selecting type, duration, and date of joining.'}
+                </Grid>
               </Grid>
             )}
 
