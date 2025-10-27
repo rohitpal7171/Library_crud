@@ -1,6 +1,26 @@
 export const defaultBoxPadding = '20px';
 export const defaultBorderColor = '#d9d9d9';
 
+export const defaultSchemaValues = {
+  studentName: '',
+  fatherName: '',
+  dateOfBirth: '',
+  dateOfJoining: '',
+  gender: 'Male',
+  phoneNumber: '',
+  referredBy: '',
+  seatReserved: false,
+  seatNumber: 0,
+  locker: false,
+  lockerNumber: 0,
+  timings: '6',
+  address: '',
+  documents: [],
+  studentProfile: '',
+  aadhaarNumber: '',
+  active: true,
+};
+
 export const formatFileSize = (bytes) => {
   if (bytes === 0 || !bytes) return '0 KB';
 

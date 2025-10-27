@@ -152,7 +152,7 @@ export default function StudentDetail({
     { label: 'Date of Joining', value: formatDate(student.dateOfJoining) },
     { label: 'Gender', value: student.gender || '—' },
     { label: 'Phone Number', value: student.phoneNumber || '—' },
-    { label: 'Referred By', value: student.referredBy || '—' },
+    { label: 'ID Proof (Aadhaar)', value: student.aadhaarNumber || '—' },
     { label: 'Timings', value: student.timings || '—' },
     {
       label: 'Seat',

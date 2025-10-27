@@ -82,10 +82,10 @@ const Dashboard = () => {
     };
   }, [students]);
 
-  const genderData = Object.entries(stats.genderCount).map(([name, value]) => ({
-    label: name,
-    value,
-  }));
+  // const genderData = Object.entries(stats.genderCount).map(([name, value]) => ({
+  //   label: name,
+  //   value,
+  // }));
 
   const monthOrder = [
     'Jan',
@@ -191,7 +191,7 @@ const Dashboard = () => {
             count={stats?.missingDocuments ?? 0}
             tooltipHtml="Number of Students don't have Documents attached."
           />
-          <StatCard
+          {/* <StatCard
             title="Aadhaar Linked"
             count={stats?.aadhaarLinked ?? 0}
             tooltipHtml="Number of Students have Aadhaar Linked."
@@ -200,7 +200,7 @@ const Dashboard = () => {
             title="Locker Reserved"
             count={stats?.withLockers ?? 0}
             tooltipHtml="Number of Students have Locker Reserved."
-          />
+          /> */}
         </Grid>
 
         <Box
@@ -222,7 +222,7 @@ const Dashboard = () => {
         </Box>
 
         <Grid container spacing={2}>
-          <Grid item size={{ sm: 12, md: 9 }}>
+          <Grid item size={{ sm: 12 }}>
             <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300 }}>
               <Typography variant="text" sx={{ fontWeight: 'bold' }}>
                 Student Enrolled in current Year : {new Date().getFullYear()}
@@ -235,7 +235,7 @@ const Dashboard = () => {
               />
             </Paper>
           </Grid>
-          <Grid item size={{ sm: 12, md: 3 }}>
+          {/* <Grid item size={{ sm: 12, md: 3 }}>
             <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300 }}>
               <Typography variant="text" sx={{ fontWeight: 'bold' }}>
                 Gender wise Distribution
@@ -263,7 +263,7 @@ const Dashboard = () => {
                 }}
               />
             </Paper>
-          </Grid>
+          </Grid> */}
         </Grid>
       </Box>
     </Fragment>

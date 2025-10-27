@@ -23,26 +23,7 @@ import { useFirebase } from '../../context/Firebase';
 import CustomButton from '../../components/customComponents/CustomButton';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
-
-const defaultValues = {
-  studentName: '',
-  fatherName: '',
-  dateOfBirth: '',
-  dateOfJoining: '',
-  gender: 'Male',
-  phoneNumber: '',
-  referredBy: '',
-  seatReserved: false,
-  seatNumber: 0,
-  locker: false,
-  lockerNumber: 0,
-  timings: '6',
-  address: '',
-  documents: [],
-  studentProfile: '',
-  aadhaarNumber: '',
-  active: true,
-};
+import { defaultSchemaValues } from '../../utils/utils';
 
 const MAX_FILES = 5;
 
@@ -55,7 +36,7 @@ const StudentAddEdit = ({
   serverFilters,
 }) => {
   const { control, handleSubmit, reset, setValue, watch, formState } = useForm({
-    defaultValues,
+    defaultValues: defaultSchemaValues,
   });
   const { errors } = formState;
   const [files, setFiles] = useState([]);
@@ -72,11 +53,11 @@ const StudentAddEdit = ({
   useEffect(() => {
     if (type === 'EDIT') {
       // make sure editData keys match defaultValues
-      reset({ ...defaultValues, ...editData });
+      reset({ ...defaultSchemaValues, ...editData });
       // if editData has documents, set them into preview
       // if (editData.documents) setFiles(editData.documents || []);
     } else {
-      reset(defaultValues);
+      reset(defaultSchemaValues);
       setFiles([]);
     }
   }, [type, editData, reset]);
@@ -106,7 +87,7 @@ const StudentAddEdit = ({
     }
 
     // reset form values and files
-    reset(defaultValues);
+    reset(defaultSchemaValues);
     setFiles([]);
 
     // propagate close
@@ -334,7 +315,7 @@ const StudentAddEdit = ({
             </Grid>
 
             <Grid item size={{ xs: 12, sm: 6 }}>
-              <Typography sx={labelSx}>Aadhaar Number</Typography>
+              <Typography sx={labelSx}>ID Proof - Aadhaar Number</Typography>
               <Controller
                 name="aadhaarNumber"
                 control={control}
