@@ -81,7 +81,9 @@ export default function StudentList(props) {
     async (id) => {
       try {
         setLoading(true);
-        const response = await firebaseContext.deleteDocumentById('students', id);
+        const response = await firebaseContext.deleteDocumentById('students', id, {
+          subcollections: ['monthlyBilling'],
+        });
         if (response?.success) {
           setLoading(false);
           showSnackbar({ severity: 'success', message: 'Student Deleted Successfully!' });

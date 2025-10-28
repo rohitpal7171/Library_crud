@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, styled, CircularProgress } from '@mui/material';
+import { Button, styled, CircularProgress, Box } from '@mui/material';
 
 const BaseButton = styled(Button, {
   shouldForwardProp: (prop) => prop !== 'colorType' && prop !== 'variantProp',
@@ -107,7 +107,14 @@ const CustomButton = React.forwardRef(
         }}
         {...rest}
       >
-        {loading ? <CircularProgress size={22} thickness={4} /> : children}
+        {loading ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', color: 'white' }}>
+            <CircularProgress size={22} thickness={4} />
+            &nbsp; Loading...
+          </Box>
+        ) : (
+          children
+        )}
       </BaseButton>
     );
   }

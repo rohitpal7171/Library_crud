@@ -50,9 +50,6 @@ const CustomDynamicTimeline = ({ events = [], position = 'right', showTimeOnLeft
           )}
 
           <TimelineSeparator>
-            {/* Connector above dot */}
-            {index !== 0 && <TimelineConnector sx={{ bgcolor: event.connectorColor }} />}
-
             {/* Main Dot */}
             <TimelineDot
               variant={event.variant || 'filled'}

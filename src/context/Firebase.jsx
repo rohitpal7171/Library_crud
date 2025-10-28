@@ -28,6 +28,7 @@ import {
   serverTimestamp,
   setDoc,
   arrayUnion,
+  writeBatch,
 } from 'firebase/firestore';
 
 const FirebaseContext = createContext(null);
@@ -74,7 +75,12 @@ export const FirebaseProvider = (props) => {
         firebaseCloudFirestore,
         `${parentCollection}/${parentId}/${subcollectionName}`
       );
-      const results = await addDoc(subColRef, data);
+      const modifiedData = {
+        ...data,
+        createdAt: serverTimestamp(),
+        modifiedAt: serverTimestamp(),
+      };
+      const results = await addDoc(subColRef, modifiedData);
       return { id: results.id };
     } catch (err) {
       console.error('addDocumentToSubcollection error', err);
@@ -113,8 +119,6 @@ export const FirebaseProvider = (props) => {
         await makeSubCollectionInFireStore(`${collectionName}/${results.id}`, 'monthlyBilling', {
           ...monthlyBilling,
           studentId: results.id,
-          createdAt: serverTimestamp(),
-          modifiedAt: serverTimestamp(),
         });
         return { data: results };
       } catch (err) {
@@ -378,38 +382,95 @@ export const FirebaseProvider = (props) => {
   }, []);
 
   // cloud Database - delete data
-  const deleteDocumentById = useCallback(async (collectionName = 'students', docId) => {
+  const BATCH_SIZE = 450; // keep headroom
+
+  async function deleteSubcollection(subcolRef) {
+    let lastDoc = null;
+
+    // Page through documents to avoid loading too many at once
+    while (true) {
+      const q = lastDoc
+        ? query(subcolRef, orderBy('__name__'), startAfter(lastDoc), limit(BATCH_SIZE))
+        : query(subcolRef, orderBy('__name__'), limit(BATCH_SIZE));
+
+      const snap = await getDocs(q);
+      if (snap.empty) break;
+
+      const batch = writeBatch(firebaseCloudFirestore);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+
+      lastDoc = snap.docs[snap.docs.length - 1];
+    }
+  }
+
+  // Main delete function
+  const deleteDocumentById = async (collectionName = 'students', docId, options = {}) => {
     try {
       if (!docId) throw new Error('Document ID is required for deletion.');
 
-      //Reference to the tracking document
-      const trackingDocRef = doc(firebaseCloudFirestore, 'willDeleteLaterInCloudinary', 'log');
+      const { subcollections = [] } = options;
 
-      // Ensure the tracking document exists (or create it)
+      // Track deleted doc IDs for Cloudinary cleanup
+      const trackingDocRef = doc(firebaseCloudFirestore, 'willDeleteLaterInCloudinary', 'log');
       const trackingDocSnap = await getDoc(trackingDocRef);
       if (!trackingDocSnap.exists()) {
         await setDoc(trackingDocRef, { folders: [] });
       }
 
-      //Push the docId into folders array
       await updateDoc(trackingDocRef, {
         folders: arrayUnion(docId),
       });
 
-      // Delete the original document
-      const docRef = doc(firebaseCloudFirestore, collectionName, docId);
-      await deleteDoc(docRef);
+      // Delete known subcollections
+      const parentRef = doc(firebaseCloudFirestore, collectionName, docId);
+      for (const sub of subcollections) {
+        const subRef = collection(parentRef, sub);
+        await deleteSubcollection(subRef);
+      }
 
+      // Finally, delete the parent document
+      await deleteDoc(parentRef);
       return { success: true, id: docId };
     } catch (err) {
       console.error('deleteDocument error', err);
       return { error: err };
     }
-  }, []);
+  };
+
+  // const deleteDocumentById = useCallback(async (collectionName = 'students', docId) => {
+  //   try {
+  //     if (!docId) throw new Error('Document ID is required for deletion.');
+
+  //     //Reference to the tracking document
+  //     const trackingDocRef = doc(firebaseCloudFirestore, 'willDeleteLaterInCloudinary', 'log');
+
+  //     // Ensure the tracking document exists (or create it)
+  //     const trackingDocSnap = await getDoc(trackingDocRef);
+  //     if (!trackingDocSnap.exists()) {
+  //       await setDoc(trackingDocRef, { folders: [] });
+  //     }
+
+  //     //Push the docId into folders array
+  //     await updateDoc(trackingDocRef, {
+  //       folders: arrayUnion(docId),
+  //     });
+
+  //     // Delete the original document
+  //     const docRef = doc(firebaseCloudFirestore, collectionName, docId);
+  //     await deleteDoc(docRef);
+
+  //     return { success: true, id: docId };
+  //   } catch (err) {
+  //     console.error('deleteDocument error', err);
+  //     return { error: err };
+  //   }
+  // }, []);
 
   // ----------------- Realtime Database Generic Helpers ----------------------------------------------------------------
 
   // realtime Database
+
   const putDataInRealtimeDatabase = useCallback(async (path, data) => {
     try {
       await set(ref(firebaseRealtimeDatabase, path), data);

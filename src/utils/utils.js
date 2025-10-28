@@ -2,6 +2,15 @@ import { Typography } from '@mui/material';
 
 export const defaultBoxPadding = '20px';
 export const defaultBorderColor = '#d9d9d9';
+export const labelSx = { fontSize: 13, fontWeight: 600, mb: 0.5 };
+
+export const defaultMonthlyPaymentSchema = {
+  subscriptionType: 'month',
+  subscriptionDuration: 1,
+  basicFee: 0,
+  lockerFee: 0,
+  seatFee: 0,
+};
 
 export const defaultSchemaValues = {
   studentName: '',
@@ -21,13 +30,14 @@ export const defaultSchemaValues = {
   studentProfile: '',
   aadhaarNumber: '',
   active: true,
-  monthlyBilling: {
-    subscriptionType: 'month',
-    subscriptionDuration: 1,
-    basicFee: 0,
-    lockerFee: 0,
-    seatFee: 0,
-  },
+  monthlyBilling: defaultMonthlyPaymentSchema,
+  // monthlyBilling: {
+  //   subscriptionType: 'month',
+  //   subscriptionDuration: 1,
+  //   basicFee: 0,
+  //   lockerFee: 0,
+  //   seatFee: 0,
+  // },
 };
 
 export const formatFileSize = (bytes) => {

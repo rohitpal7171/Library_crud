@@ -111,6 +111,7 @@ const StudentAddEdit = ({
         monthlyBilling: {
           ...data.monthlyBilling,
           nextPaymentDate: nextDue,
+          paymentDate: data.dateOfJoining,
         },
       };
       firebaseContext
@@ -273,13 +274,6 @@ const StudentAddEdit = ({
                     fullWidth
                     size="small"
                     InputLabelProps={{ shrink: true }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <CalendarToday fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
                     error={!!errors.dateOfBirth}
                     helperText={errors.dateOfBirth?.message || ''}
                   />
@@ -319,13 +313,6 @@ const StudentAddEdit = ({
                     fullWidth
                     size="small"
                     InputLabelProps={{ shrink: true }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <CalendarToday fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    }}
                     error={!!errors.dateOfJoining}
                     helperText={errors.dateOfJoining?.message || ''}
                   />
