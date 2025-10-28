@@ -38,6 +38,8 @@ const firebaseCloudFirestore = getFirestore(firebaseApp);
 
 const googleProvider = new GoogleAuthProvider();
 
+const allowedEmails = ['rohit.pal@gmail.com', 'shivaaylibrary@gmail.com'];
+
 export const useFirebase = () => useContext(FirebaseContext);
 
 export const FirebaseProvider = (props) => {
@@ -500,35 +502,6 @@ export const FirebaseProvider = (props) => {
     }
   };
 
-  // const deleteDocumentById = useCallback(async (collectionName = 'students', docId) => {
-  //   try {
-  //     if (!docId) throw new Error('Document ID is required for deletion.');
-
-  //     //Reference to the tracking document
-  //     const trackingDocRef = doc(firebaseCloudFirestore, 'willDeleteLaterInCloudinary', 'log');
-
-  //     // Ensure the tracking document exists (or create it)
-  //     const trackingDocSnap = await getDoc(trackingDocRef);
-  //     if (!trackingDocSnap.exists()) {
-  //       await setDoc(trackingDocRef, { folders: [] });
-  //     }
-
-  //     //Push the docId into folders array
-  //     await updateDoc(trackingDocRef, {
-  //       folders: arrayUnion(docId),
-  //     });
-
-  //     // Delete the original document
-  //     const docRef = doc(firebaseCloudFirestore, collectionName, docId);
-  //     await deleteDoc(docRef);
-
-  //     return { success: true, id: docId };
-  //   } catch (err) {
-  //     console.error('deleteDocument error', err);
-  //     return { error: err };
-  //   }
-  // }, []);
-
   // ----------------- Realtime Database Generic Helpers ----------------------------------------------------------------
 
   // realtime Database
@@ -589,11 +562,20 @@ export const FirebaseProvider = (props) => {
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      const result = await signInWithPopup(firebaseAuth, googleProvider);
-      return { user: result.user, credential: result.credential };
+      await signInWithPopup(firebaseAuth, googleProvider).then((result) => {
+        const user = result.user;
+        if (!allowedEmails.includes(user.email)) {
+          // User is not on the local list, sign them out immediately.
+          signOut(firebaseAuth);
+          throw new Error('Your email is not authorized for this application.');
+        } else {
+          // User is on the list, proceed as normal.
+          return { user: result.user, credential: result.credential };
+        }
+      });
     } catch (err) {
       console.error('signInWithGoogle error', err);
-      return { error: err };
+      throw new Error(err?.message ?? 'Your email is not authorized for this application.');
     }
   }, []);
 
