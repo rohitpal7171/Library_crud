@@ -1,7 +1,14 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { defaultBoxPadding } from '../../utils/utils';
+import { defaultBoxPadding, firebaseTimestampToDate } from '../../utils/utils';
 import { Box, Grid, Paper, Typography } from '@mui/material';
-import { CheckCircleOutline, DescriptionOutlined, People } from '@mui/icons-material';
+import {
+  CheckCircleOutline,
+  CurrencyRupee,
+  DescriptionOutlined,
+  People,
+  Person,
+  PersonAdd,
+} from '@mui/icons-material';
 import { StatCard } from '../../components/customComponents/CustomCard';
 import { PieChart, BarChart } from '@mui/x-charts';
 import { useFirebase } from '../../context/Firebase';
@@ -15,7 +22,10 @@ const Dashboard = () => {
   const fetchStudentData = useCallback(() => {
     setLoading(true);
     firebaseContext
-      .getDocumentsByQuery()
+      .getCollectionWithSubcollections({
+        collectionName: 'students',
+        subcollections: ['monthlyBilling'],
+      })
       .then((response) => {
         setStudents(response?.data ?? []);
         setLoading(false);
@@ -109,6 +119,106 @@ const Dashboard = () => {
     return `${value}`;
   };
 
+  const getEntryTotal = (e = {}) =>
+    Number(e.basicFee || 0) + Number(e.lockerFee || 0) + Number(e.seatFee || 0);
+
+  const normalizeMonthKey = (d) => {
+    try {
+      const date = typeof d === 'string' ? new Date(d) : d;
+      if (!date || isNaN(date)) return null;
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // e.g. 2025-10
+    } catch {
+      return null;
+    }
+  };
+
+  const billing = useMemo(() => {
+    // flatten monthlyBilling entries across students
+    const allEntries = students.flatMap((s) =>
+      Array.isArray(s.subcollections.monthlyBilling)
+        ? s.subcollections.monthlyBilling.map((mb) => ({ ...mb, __student: s }))
+        : []
+    );
+
+    const totalRevenue = allEntries.reduce((sum, e) => sum + getEntryTotal(e), 0);
+
+    // build month index (requires e.period on entries; gracefully skips if absent)
+    const entriesByMonth = allEntries.reduce((acc, e) => {
+      const key = e.paymentDate ? normalizeMonthKey(e.paymentDate) : null;
+      if (!key) return acc;
+      (acc[key] ||= []).push(e);
+      return acc;
+    }, {});
+
+    // current month key
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const thisMonthEntries = entriesByMonth[thisMonthKey] || [];
+    const mrr = thisMonthEntries.reduce((sum, e) => sum + getEntryTotal(e), 0);
+
+    const dueAmount = students.reduce((sum, student) => {
+      // ensure subcollection exists and has entries
+      const latestBilling = Array.isArray(student?.subcollections?.monthlyBilling)
+        ? student.subcollections.monthlyBilling[0] // latest payment is first (index 0)
+        : null;
+
+      if (!latestBilling || !latestBilling.nextPaymentDate) return sum;
+
+      const today = new Date();
+      const dueDate = firebaseTimestampToDate(latestBilling.nextPaymentDate);
+      const isDue =
+        !isNaN(dueDate) && (dueDate <= today || dueDate.toDateString() === today.toDateString());
+
+      if (isDue) {
+        // add only the basic fee from latest billing
+        return sum + Number(latestBilling.basicFee || 0);
+      }
+
+      return sum;
+    }, 0);
+
+    // fee buckets
+    const basicRevenue = allEntries.reduce((s, e) => s + Number(e.basicFee || 0), 0);
+    const lockerRevenue = allEntries.reduce((s, e) => s + Number(e.lockerFee || 0), 0);
+    const seatRevenue = allEntries.reduce((s, e) => s + Number(e.seatFee || 0), 0);
+
+    // subscription mix
+    const subscriptionMix = allEntries.reduce((acc, e) => {
+      const key = e.subscriptionType || 'unknown';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    // revenue trend
+    const revenueByMonth = Object.entries(entriesByMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([monthKey, arr]) => ({
+        monthKey, // "YYYY-MM"
+        revenue: arr.reduce((sum, e) => sum + getEntryTotal(e), 0),
+      }));
+
+    // top payers this month
+    const topPayersThisMonth = thisMonthEntries
+      .map((e) => ({
+        name: e.__student?.studentName || 'Unknown',
+        amount: getEntryTotal(e),
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+
+    return {
+      totalRevenue,
+      mrr,
+      dueAmount,
+      basicRevenue,
+      lockerRevenue,
+      seatRevenue,
+      subscriptionMix,
+      revenueByMonth,
+      topPayersThisMonth,
+    };
+  }, [students]);
+
   const chartSetting = {
     xAxis: [{ dataKey: 'month', tickPlacement: 'middle', tickLabelPlacement: 'middle' }],
     yAxis: [
@@ -142,24 +252,32 @@ const Dashboard = () => {
           </Box>
         </Box>
         <Grid container spacing={2} style={{ padding: 10 }}>
-          <StatCard title="Total Students" count={stats?.total ?? 0} icon={People} />
+          <StatCard
+            title="Total Students"
+            count={stats?.total ?? 0}
+            icon={People}
+            loading={loading}
+          />
           <StatCard
             title="Active Students"
             count={stats?.active ?? 0}
-            icon={CheckCircleOutline}
+            icon={Person}
             iconColor="success"
+            loading={loading}
           />
           <StatCard
             title="Inactive Students"
             count={stats?.inactive ?? 0}
-            icon={CheckCircleOutline}
+            icon={Person}
             iconColor="error"
+            loading={loading}
           />
           <StatCard
             title="This Month Enrollment"
             count={stats?.thisMonthEnrollments ?? 0}
-            icon={DescriptionOutlined}
+            icon={PersonAdd}
             iconColor="primary"
+            loading={loading}
           />
         </Grid>
 
@@ -185,23 +303,57 @@ const Dashboard = () => {
             title="Students with Documents"
             count={stats?.totalDocuments ?? 0}
             tooltipHtml="Number of Students have Documents attached."
+            loading={loading}
           />
           <StatCard
             title="Students without Documents"
             count={stats?.missingDocuments ?? 0}
             tooltipHtml="Number of Students don't have Documents attached."
-          />
-          {/* <StatCard
-            title="Aadhaar Linked"
-            count={stats?.aadhaarLinked ?? 0}
-            tooltipHtml="Number of Students have Aadhaar Linked."
+            loading={loading}
+            iconColor="error"
           />
           <StatCard
-            title="Locker Reserved"
-            count={stats?.withLockers ?? 0}
-            tooltipHtml="Number of Students have Locker Reserved."
-          /> */}
+            title="This Month Earning"
+            count={`₹${(billing.mrr || 0).toLocaleString()}`}
+            loading={loading}
+            icon={CurrencyRupee}
+            iconColor="success"
+          />
+          <StatCard
+            title="Due Amount"
+            count={`₹${(billing.dueAmount || 0).toLocaleString()}`}
+            iconColor="error"
+            loading={loading}
+            icon={CurrencyRupee}
+            tooltipHtml="Number of Students have pending Basic Fees."
+          />
         </Grid>
+
+        {/* <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            transition: 'all 240ms ease-in-out',
+            mt: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: '500' }}>
+              Billing
+            </Typography>
+          </Box>
+        </Box>
+        <Grid container spacing={2} style={{ padding: 10 }}>
+          <StatCard
+            title="Total Revenue"
+            count={`₹${(billing.totalRevenue || 0).toLocaleString()}`}
+            loading={loading}
+            tooltipHtml="Total Revenue generated from all Students and it includes due amount also"
+          />
+        </Grid> */}
 
         <Box
           sx={{
@@ -235,35 +387,6 @@ const Dashboard = () => {
               />
             </Paper>
           </Grid>
-          {/* <Grid item size={{ sm: 12, md: 3 }}>
-            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300 }}>
-              <Typography variant="text" sx={{ fontWeight: 'bold' }}>
-                Gender wise Distribution
-              </Typography>
-              <PieChart
-                width={300}
-                height={300}
-                loading={loading}
-                series={[
-                  {
-                    data: genderData,
-                    innerRadius: 30,
-                    outerRadius: 100,
-                    paddingAngle: 5,
-                    cornerRadius: 5,
-                    cx: 150,
-                    cy: 150,
-                    arcLabel: (params) => params.label ?? '',
-                  },
-                ]}
-                hideLegend
-                sx={{
-                  margin: 'auto',
-                  display: 'block',
-                }}
-              />
-            </Paper>
-          </Grid> */}
         </Grid>
       </Box>
     </Fragment>

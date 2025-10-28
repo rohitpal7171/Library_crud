@@ -310,6 +310,68 @@ export const FirebaseProvider = (props) => {
     []
   );
 
+  const getCollectionWithSubcollections = useCallback(
+    async ({
+      collectionName = 'students',
+      subcollections = ['monthlyBilling'],
+      orderField = 'createdAt',
+      orderDirection = 'desc',
+    }) => {
+      try {
+        // Build base query
+        const colRef = collection(firebaseCloudFirestore, collectionName);
+        const q = query(colRef, orderBy(orderField, orderDirection));
+
+        const snapshot = await getDocs(q);
+
+        // Map base docs
+        const baseDocs = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          _ref: docSnap.ref, // keep for subcollection fetch
+          ...docSnap.data(),
+        }));
+
+        if (!subcollections.length) {
+          return { data: baseDocs.map(({ _ref, ...rest }) => rest) };
+        }
+
+        // Fetch subcollections for each doc
+        const results = await Promise.allSettled(
+          baseDocs.map(async (parent) => {
+            const subData = {};
+
+            await Promise.all(
+              subcollections.map(async (subName) => {
+                try {
+                  const subRef = collection(parent._ref, subName);
+                  const subSnap = await getDocs(subRef);
+                  subData[subName] = subSnap.docs.map((d) => ({
+                    id: d.id,
+                    ...d.data(),
+                  }));
+                } catch (err) {
+                  console.error(`Failed to fetch subcollection "${subName}" for ${parent.id}`, err);
+                  subData[subName] = [];
+                }
+              })
+            );
+
+            const { _ref, ...rest } = parent;
+            return { ...rest, subcollections: subData };
+          })
+        );
+
+        const data = results.map((r, i) => (r.status === 'fulfilled' ? r.value : baseDocs[i]));
+
+        return { data };
+      } catch (error) {
+        console.error('getCollectionWithSubcollections error', error);
+        return { error };
+      }
+    },
+    []
+  );
+
   const getSubcollectionDocumentsByStudentId = async ({
     parentCollection = 'students',
     studentId,
@@ -565,6 +627,7 @@ export const FirebaseProvider = (props) => {
     updateDocument,
     deleteDocumentById,
     getSubcollectionDocumentsByStudentId,
+    getCollectionWithSubcollections,
 
     // Realtime DB generics
     putDataInRealtimeDatabase,
