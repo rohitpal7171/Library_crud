@@ -23,6 +23,7 @@ import StudentAddEdit from './StudentAddEdit';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import StudentDetail from './StudentDetail';
 import CustomSwitch from '../../components/customComponents/CustomSwitch';
+import { PaymentDetail } from './PaymentDetail';
 
 const safeValue = (val) => (val ? val : '--');
 
@@ -49,6 +50,7 @@ export default function StudentList(props) {
   const [menuRow, setMenuRow] = useState(null);
   const [openEditForm, setOpenEditForm] = useState(false);
   const [openStudentDetail, setOpenStudentDetail] = useState(false);
+  const [openPaymentDetail, setOpenPaymentDetail] = useState(false);
 
   const firebaseContext = useFirebase();
   const { showSnackbar } = useSnackbar();
@@ -108,6 +110,14 @@ export default function StudentList(props) {
     (item) => {
       setSelectedStudentForEdit(item);
       setOpenStudentDetail(true);
+    },
+    [setSelectedStudentForEdit]
+  );
+
+  const handlePaymentDueClick = useCallback(
+    (item) => {
+      setSelectedStudentForEdit(item);
+      setOpenPaymentDetail(true);
     },
     [setSelectedStudentForEdit]
   );
@@ -324,7 +334,12 @@ export default function StudentList(props) {
             p.row?.monthlyBillingLatest?.nextPaymentDate
           );
           return (
-            <Typography color={color} fontWeight={fontWeight}>
+            <Typography
+              color={color}
+              fontWeight={fontWeight}
+              sx={{ cursor: 'pointer', mt: 2, textDecoration: 'underline' }}
+              onClick={() => handlePaymentDueClick(p.row)}
+            >
               {text}
             </Typography>
           );
@@ -405,7 +420,16 @@ export default function StudentList(props) {
     });
 
     return cols;
-  }, [isXs, isMd, handleStudentDetail, onToggleActive, onEditDirect, onDeleteDirect, openMenu]);
+  }, [
+    isXs,
+    isMd,
+    handleStudentDetail,
+    handlePaymentDueClick,
+    onToggleActive,
+    onEditDirect,
+    onDeleteDirect,
+    openMenu,
+  ]);
 
   const innerHeight = 'calc(75vh - 16px)';
 
@@ -416,6 +440,11 @@ export default function StudentList(props) {
 
   const handleCloseStudentDetail = () => {
     setOpenStudentDetail(false);
+    setSelectedStudentForEdit(null);
+  };
+
+  const handleClosePaymentDetail = () => {
+    setOpenPaymentDetail(false);
     setSelectedStudentForEdit(null);
   };
 
@@ -435,6 +464,15 @@ export default function StudentList(props) {
           open={openStudentDetail}
           onClose={() => handleCloseStudentDetail()}
           parentStudent={selectedStudentForEdit}
+          fetchStudentData={fetchStudentData}
+          serverFilters={serverFilters}
+        />
+      )}
+      {openPaymentDetail && (
+        <PaymentDetail
+          open={openPaymentDetail}
+          onClose={() => handleClosePaymentDetail()}
+          student={selectedStudentForEdit}
           fetchStudentData={fetchStudentData}
           serverFilters={serverFilters}
         />

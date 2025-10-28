@@ -11,6 +11,13 @@ export default defineConfig({
     }),
   ],
   optimizeDeps: {
-    include: ['@mui/material', '@mui/system', '@emotion/react', '@emotion/styled'],
+    include: [
+      '@mui/material',
+      '@mui/system',
+      '@emotion/react',
+      '@emotion/styled',
+      '@mui/lab',
+      '@mui/icons-material',
+    ],
   },
 });
