@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import MuiDrawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
@@ -12,6 +11,9 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import { useFirebase } from '../../context/Firebase';
+import { Box } from '@mui/material';
+import { Logout } from '@mui/icons-material';
 
 const drawerWidth = 240;
 
@@ -66,6 +68,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 
 export default function SidebarDrawer({ open, setOpen, selectedPage, onNavigate }) {
   const theme = useTheme();
+  const firebaseContext = useFirebase();
 
   const handleDrawerClose = () => setOpen(false);
 
@@ -73,6 +76,10 @@ export default function SidebarDrawer({ open, setOpen, selectedPage, onNavigate 
     { text: 'Dashboard', icon: <DashboardIcon />, key: 'dashboard' },
     { text: 'Student List', icon: <PeopleAltIcon />, key: 'students' },
   ];
+
+  const handleSignOut = () => {
+    firebaseContext.firebaseSignOut();
+  };
 
   return (
     <Drawer variant="permanent" open={open}>
@@ -109,6 +116,38 @@ export default function SidebarDrawer({ open, setOpen, selectedPage, onNavigate 
             </ListItemButton>
           </ListItem>
         ))}
+      </List>
+      <Box sx={{ flexGrow: 1 }} />
+
+      <Divider />
+
+      {/* Sign Out */}
+      <List>
+        <ListItem disablePadding sx={{ display: 'block' }}>
+          <ListItemButton
+            onClick={() => handleSignOut()}
+            sx={{
+              minHeight: 48,
+              justifyContent: open ? 'initial' : 'center',
+              px: 2.5,
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: open ? 3 : 'auto',
+                justifyContent: 'center',
+              }}
+            >
+              <Logout color="error" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Sign Out"
+              sx={{ opacity: open ? 1 : 0 }}
+              primaryTypographyProps={{ color: 'error' }}
+            />
+          </ListItemButton>
+        </ListItem>
       </List>
     </Drawer>
   );
