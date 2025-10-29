@@ -1,21 +1,18 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { defaultBoxPadding, firebaseTimestampToDate } from '../../utils/utils';
+import { defaultBoxPadding } from '../../utils/utils';
 import { Box, Grid, Paper, Typography } from '@mui/material';
-import {
-  CheckCircleOutline,
-  CurrencyRupee,
-  DescriptionOutlined,
-  People,
-  Person,
-  PersonAdd,
-} from '@mui/icons-material';
+import { CurrencyRupee, People, Person, PersonAdd } from '@mui/icons-material';
 import { StatCard } from '../../components/customComponents/CustomCard';
-import { PieChart, BarChart } from '@mui/x-charts';
+import { BarChart } from '@mui/x-charts';
 import { useFirebase } from '../../context/Firebase';
+import MiniStudentList from '../Common/MiniStudentList';
+import { PaymentDetail } from './PaymentDetail';
 
 const Dashboard = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [openPaymentDetail, setOpenPaymentDetail] = useState(false);
 
   const firebaseContext = useFirebase();
 
@@ -92,11 +89,6 @@ const Dashboard = () => {
     };
   }, [students]);
 
-  // const genderData = Object.entries(stats.genderCount).map(([name, value]) => ({
-  //   label: name,
-  //   value,
-  // }));
-
   const monthOrder = [
     'Jan',
     'Feb',
@@ -156,28 +148,92 @@ const Dashboard = () => {
     const thisMonthEntries = entriesByMonth[thisMonthKey] || [];
     const mrr = thisMonthEntries.reduce((sum, e) => sum + getEntryTotal(e), 0);
 
-    const dueAmount = students.reduce((sum, student) => {
-      // ensure subcollection exists and has entries
-      const latestBilling = Array.isArray(student?.subcollections?.monthlyBilling)
-        ? student.subcollections.monthlyBilling[0] // latest payment is first (index 0)
-        : null;
+    const dueAmount = (students, today = new Date()) => {
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-      if (!latestBilling || !latestBilling.nextPaymentDate) return sum;
+      const list_of_student = [];
+      let total_due_amount = 0;
 
-      const today = new Date();
-      const dueDate = firebaseTimestampToDate(latestBilling.nextPaymentDate);
-      const isDue =
-        !isNaN(dueDate) && (dueDate <= today || dueDate.toDateString() === today.toDateString());
+      for (const s of students) {
+        const bill0 = s?.subcollections?.monthlyBilling?.[0];
+        if (!bill0 || !bill0.nextPaymentDate) continue;
 
-      if (isDue) {
-        // add only the basic fee from latest billing
-        return sum + Number(latestBilling.basicFee || 0);
+        // Handle Firestore-like timestamp object {seconds, nanoseconds}
+        const ts = bill0.nextPaymentDate;
+        const dueDate = ts?.seconds != null ? new Date(ts.seconds * 1000) : new Date(ts);
+
+        // Compare by date (not time of day)
+        const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+        const isDue = dueDateOnly <= startOfToday;
+
+        if (isDue) {
+          const basic = parseInt(bill0.basicFee || 0, 10) || 0;
+          const seat = parseInt(bill0.seatFee || 0, 10) || 0;
+          const locker = parseInt(bill0.lockerFee || 0, 10) || 0;
+          const due_amount = basic + seat + locker;
+
+          list_of_student.push({
+            ...s,
+            due_amount,
+          });
+
+          total_due_amount += due_amount;
+        }
       }
 
-      return sum;
-    }, 0);
+      return { list_of_student, total_due_amount };
+    };
 
-    // fee buckets
+    const dueInNextDays = (students, days = 7, today = new Date()) => {
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const startOfTomorrow = new Date(
+        startOfToday.getFullYear(),
+        startOfToday.getMonth(),
+        startOfToday.getDate() + 1
+      );
+      const endOfWindow = new Date(
+        startOfToday.getFullYear(),
+        startOfToday.getMonth(),
+        startOfToday.getDate() + days
+      );
+
+      const list_of_student = [];
+      let total_due_amount = 0;
+
+      for (const s of students) {
+        const bill0 = s?.subcollections?.monthlyBilling?.[0];
+        if (!bill0 || !bill0.nextPaymentDate) continue;
+
+        // Normalize Firestore Timestamp or other inputs to a Date
+        const ts = bill0.nextPaymentDate;
+        const dueDate = ts?.seconds != null ? new Date(ts.seconds * 1000) : new Date(ts); // supports Date, ms number, or ISO string
+
+        if (isNaN(dueDate)) continue;
+
+        // Compare by date (ignore time of day)
+        const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+
+        const isWithinNextWindow = dueDateOnly >= startOfTomorrow && dueDateOnly <= endOfWindow;
+
+        if (isWithinNextWindow) {
+          const basic = parseInt(bill0.basicFee || 0, 10) || 0;
+          const seat = parseInt(bill0.seatFee || 0, 10) || 0;
+          const locker = parseInt(bill0.lockerFee || 0, 10) || 0;
+          const due_amount = basic + seat + locker;
+
+          list_of_student.push({
+            ...s,
+            due_amount,
+            due_date: dueDateOnly, // optional: handy for sorting/display
+          });
+
+          total_due_amount += due_amount;
+        }
+      }
+
+      return { list_of_student, total_due_amount };
+    };
+
     const basicRevenue = allEntries.reduce((s, e) => s + Number(e.basicFee || 0), 0);
     const lockerRevenue = allEntries.reduce((s, e) => s + Number(e.lockerFee || 0), 0);
     const seatRevenue = allEntries.reduce((s, e) => s + Number(e.seatFee || 0), 0);
@@ -197,15 +253,6 @@ const Dashboard = () => {
         revenue: arr.reduce((sum, e) => sum + getEntryTotal(e), 0),
       }));
 
-    // top payers this month
-    const topPayersThisMonth = thisMonthEntries
-      .map((e) => ({
-        name: e.__student?.studentName || 'Unknown',
-        amount: getEntryTotal(e),
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
-
     return {
       totalRevenue,
       mrr,
@@ -215,7 +262,7 @@ const Dashboard = () => {
       seatRevenue,
       subscriptionMix,
       revenueByMonth,
-      topPayersThisMonth,
+      dueInNextDays,
     };
   }, [students]);
 
@@ -232,8 +279,30 @@ const Dashboard = () => {
     margin: { left: 0 },
   };
 
+  const handlePaymentClick = useCallback(
+    (item) => {
+      setSelectedStudent(item);
+      setOpenPaymentDetail(true);
+    },
+    [setSelectedStudent]
+  );
+
+  const handleClosePaymentDetail = () => {
+    setOpenPaymentDetail(false);
+    setSelectedStudent(null);
+  };
+
   return (
     <Fragment>
+      {openPaymentDetail && (
+        <PaymentDetail
+          open={openPaymentDetail}
+          onClose={() => handleClosePaymentDetail()}
+          student={selectedStudent}
+          fetchStudentData={fetchStudentData}
+          serverFilters={null}
+        />
+      )}
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>
         <Box
           sx={{
@@ -321,7 +390,7 @@ const Dashboard = () => {
           />
           <StatCard
             title="Due Amount"
-            count={`₹${(billing.dueAmount || 0).toLocaleString()}`}
+            count={`₹${billing.dueAmount(students).total_due_amount.toLocaleString()}`}
             iconColor="error"
             loading={loading}
             icon={CurrencyRupee}
@@ -329,31 +398,60 @@ const Dashboard = () => {
           />
         </Grid>
 
-        {/* <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            transition: 'all 240ms ease-in-out',
-            mt: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: '500' }}>
-              Billing
-            </Typography>
-          </Box>
-        </Box>
-        <Grid container spacing={2} style={{ padding: 10 }}>
-          <StatCard
-            title="Total Revenue"
-            count={`₹${(billing.totalRevenue || 0).toLocaleString()}`}
-            loading={loading}
-            tooltipHtml="Total Revenue generated from all Students and it includes due amount also"
-          />
-        </Grid> */}
+        <Grid container spacing={2} sx={{ p: 1 }}>
+          <Grid item size={{ xs: 12, sm: 6 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                transition: 'all 240ms ease-in-out',
+                mt: 2,
+                mb: 1,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: '500' }}>
+                  Due Amount
+                </Typography>
+              </Box>
+            </Box>
+            <MiniStudentList
+              students={billing.dueAmount(students).list_of_student}
+              loading={loading}
+              amountTextColor="error.main"
+              handlePaymentClick={handlePaymentClick}
+            />
+          </Grid>
+          <Grid item size={{ xs: 12, sm: 6 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                transition: 'all 240ms ease-in-out',
+                mt: 2,
+                mb: 1,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: '500' }}>
+                  Upcoming Due ( 7 Days )
+                </Typography>
+              </Box>
+            </Box>
+            <MiniStudentList
+              students={billing.dueInNextDays(students, 7).list_of_student}
+              loading={loading}
+              amountTextColor="warning.main"
+              handlePaymentClick={handlePaymentClick}
+            />
+          </Grid>
+        </Grid>
 
         <Box
           sx={{

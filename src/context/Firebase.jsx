@@ -322,7 +322,13 @@ export const FirebaseProvider = (props) => {
       try {
         // Build base query
         const colRef = collection(firebaseCloudFirestore, collectionName);
-        const q = query(colRef, orderBy(orderField, orderDirection));
+        // Conditional Firestore query
+        let q;
+        if (collectionName === 'students') {
+          q = query(colRef, where('active', '==', true), orderBy(orderField, orderDirection));
+        } else {
+          q = query(colRef, orderBy(orderField, orderDirection));
+        }
 
         const snapshot = await getDocs(q);
 
