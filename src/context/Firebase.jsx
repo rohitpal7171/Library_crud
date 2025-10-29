@@ -38,7 +38,7 @@ const firebaseCloudFirestore = getFirestore(firebaseApp);
 
 const googleProvider = new GoogleAuthProvider();
 
-const allowedEmails = ['rohit.pal@gmail.com', 'shivaaylibrary@gmail.com'];
+const allowedEmails = ['rohit.pal7171@gmail.com', 'Shivaaylibrary98@gmail.com'];
 
 export const useFirebase = () => useContext(FirebaseContext);
 
@@ -570,11 +570,11 @@ export const FirebaseProvider = (props) => {
           throw new Error('Your email is not authorized for this application.');
         } else {
           // User is on the list, proceed as normal.
+          setUser(result.user);
           return { user: result.user, credential: result.credential };
         }
       });
     } catch (err) {
-      console.error('signInWithGoogle error', err);
       throw new Error(err?.message ?? 'Your email is not authorized for this application.');
     }
   }, []);
