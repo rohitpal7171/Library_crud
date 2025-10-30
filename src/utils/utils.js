@@ -153,3 +153,22 @@ export const getDueDateDisplay = (timestamp) => {
 
   return { text: formatDate(date), color, fontWeight };
 };
+
+export function buildWhatsAppLink(rawNumber, text) {
+  const e164 = rawNumber.replace(/\D/g, ''); // e.g. 919144321129
+  const t = text ? encodeURIComponent(text) : '';
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // Desktop → go directly to WhatsApp Web chat (no interstitial)
+  if (!isMobile) {
+    return `https://web.whatsapp.com/send?phone=${e164}${t ? `&text=${t}` : ''}`;
+  }
+
+  // Mobile → universal link that opens the app
+  return `https://wa.me/${e164}${t ? `?text=${t}` : ''}`;
+}
+
+export const sendMessageOnWhatsApp = (NumberAsE164, textToBeSend) => {
+  const webUrl = buildWhatsAppLink(NumberAsE164, textToBeSend);
+  window.open(webUrl, '_blank');
+};

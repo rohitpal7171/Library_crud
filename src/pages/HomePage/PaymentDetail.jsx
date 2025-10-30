@@ -13,9 +13,10 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import { Close, ThumbUpAltOutlined } from '@mui/icons-material';
+import { Close, ThumbUpAltOutlined, WhatsApp } from '@mui/icons-material';
 import CustomDynamicTimeline from '../../components/customComponents/CustomDynamicTimeline';
 import {
   computeNextPaymentDate,
@@ -23,6 +24,7 @@ import {
   formatDate,
   formatFirebaseTimestamp,
   labelSx,
+  sendMessageOnWhatsApp,
 } from '../../utils/utils';
 import { useForm, Controller } from 'react-hook-form';
 import CustomButton from '../../components/customComponents/CustomButton';
@@ -323,6 +325,18 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
     </Box>
   );
 
+  const handlePaymentReminder = () => {
+    const number = student?.phoneNumber ?? student?.phoneNumber2;
+    if (number) {
+      const text = `Hi, Sweet Payment Reminder from Shivaay Library & Co-working for date: ${formatFirebaseTimestamp(
+        payments[0].nextPaymentDate
+      )}`;
+      sendMessageOnWhatsApp(number, text);
+    } else {
+      showSnackbar({ severity: 'error', message: 'Phone Number not found.' });
+    }
+  };
+
   return (
     <Fragment>
       <Drawer
@@ -344,10 +358,22 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
                 </Typography>
               </Box>
             </Stack>
-
-            <IconButton onClick={onClose} aria-label="close">
-              <Close />
-            </IconButton>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Tooltip
+                title={`Send Payment Reminder for ${
+                  payments[0]?.nextPaymentDate
+                    ? formatFirebaseTimestamp(payments[0].nextPaymentDate)
+                    : '-Date Not Found-'
+                }`}
+              >
+                <IconButton onClick={() => handlePaymentReminder()} aria-label="close">
+                  <WhatsApp color="primary" />
+                </IconButton>
+              </Tooltip>
+              <IconButton onClick={onClose} aria-label="close">
+                <Close />
+              </IconButton>
+            </Stack>
           </Box>
           {/* Header Ends */}
           {/* Body Starts */}
