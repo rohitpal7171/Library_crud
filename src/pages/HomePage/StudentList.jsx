@@ -330,7 +330,7 @@ export default function StudentList(props) {
         field: 'monthlyBillingLatest.nextPaymentDate',
         headerName: 'Due Date',
         flex: 0.8,
-        width: 100,
+        width: 80,
         renderCell: (p) => {
           const { text, color, fontWeight } = getDueDateDisplay(
             p.row?.monthlyBillingLatest?.nextPaymentDate
@@ -377,7 +377,7 @@ export default function StudentList(props) {
       field: 'actions',
       headerName: 'Actions',
       flex: 1,
-      width: 100,
+      width: 80,
       renderCell: (params) => {
         if (!isXs) {
           return (
