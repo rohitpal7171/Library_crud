@@ -1,9 +1,9 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { defaultBoxPadding } from '../../utils/utils';
 import {
-  Avatar,
   Box,
   Grid,
+  IconButton,
   List,
   ListItem,
   ListItemAvatar,
@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import {
   AccountBalanceWallet,
-  AccountBalanceWalletOutlined,
   AirlineSeatReclineNormal,
   CurrencyRupee,
   LockClock,
@@ -21,9 +20,11 @@ import {
   Person,
   PersonAdd,
   Savings,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import { StatCard } from '../../components/customComponents/CustomCard';
-import { BarChart } from '@mui/x-charts';
+import { BarChart, LineChart } from '@mui/x-charts';
 import { useFirebase } from '../../context/Firebase';
 import MiniStudentList from '../Common/MiniStudentList';
 import { PaymentDetail } from './PaymentDetail';
@@ -33,6 +34,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [openPaymentDetail, setOpenPaymentDetail] = useState(false);
+  const [currentYearEarningVisibility, setCurrentYearEarningVisibility] = useState(false);
 
   const firebaseContext = useFirebase();
 
@@ -310,6 +312,58 @@ const Dashboard = () => {
         totalLockerFees,
       };
     };
+
+    // Helper: Generate "YYYY-MM" keys from Date
+    const ymKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+    // Helper: Move forward/backward by N months
+    const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
+
+    // Helper: Format as "Oct 25" style for chart labels
+    const labelMMMYY = (d) =>
+      d.toLocaleString('en-US', { month: 'short' }) + ' ' + String(d.getFullYear()).slice(-2);
+
+    // Helper: Build last N consecutive months (default: 12)
+    const buildMonthSpan = (endDate = new Date(), count = 12) => {
+      const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1); // start from 1st of current month
+      const months = [];
+      for (let i = count - 1; i >= 0; i--) months.push(addMonths(end, -i));
+      return months;
+    };
+
+    // Function: Builds a 12-month growth dataset for total revenue (basic + seat + locker)
+    const getMonthlyGrowthSeries = ({ months = 12, today = new Date() } = {}) => {
+      // Map of YYYY-MM → total revenue for that month
+      const revenueMap = new Map();
+      for (const [key, arr] of Object.entries(entriesByMonth)) {
+        const total = arr.reduce((sum, e) => sum + getEntryTotal(e), 0);
+        revenueMap.set(key, total);
+      }
+
+      // Build contiguous 12-month range, filling missing months with 0
+      const monthDates = buildMonthSpan(today, months);
+      const labels = monthDates.map(labelMMMYY);
+      const values = monthDates.map((d) => revenueMap.get(ymKey(d)) ?? 0);
+
+      // Prepare LineChart-compatible structures
+      const xAxis = [{ scaleType: 'point', data: labels }];
+      const series = [
+        {
+          data: values,
+          label: 'Total Revenue',
+          valueFormatter: (v) => `₹${Number(v || 0).toLocaleString()}`, // Show ₹ formatted value
+        },
+      ];
+
+      // Return ready-to-plot dataset
+      return {
+        labels,
+        values,
+        xAxis,
+        series,
+      };
+    };
+
     return {
       totalRevenue,
       mrr,
@@ -321,6 +375,7 @@ const Dashboard = () => {
       revenueByMonth,
       dueInNextDays,
       getCurrentYearEarnings,
+      getMonthlyGrowthSeries,
     };
   }, [students]);
 
@@ -362,7 +417,7 @@ const Dashboard = () => {
         />
       )}
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>
-        <Box
+        {/* <Box
           sx={{
             display: 'flex',
             gap: 2,
@@ -377,13 +432,14 @@ const Dashboard = () => {
               Overview
             </Typography>
           </Box>
-        </Box>
-        <Grid container spacing={2} style={{ padding: 10 }}>
+        </Box> */}
+        <Grid container spacing={2}>
           <StatCard
             title="Total Students"
             count={stats?.total ?? 0}
             icon={People}
             loading={loading}
+            key={'total_students'}
           />
           <StatCard
             title="Active Students"
@@ -391,6 +447,7 @@ const Dashboard = () => {
             icon={Person}
             iconColor="success"
             loading={loading}
+            key={'active_students'}
           />
           <StatCard
             title="Inactive Students"
@@ -398,6 +455,7 @@ const Dashboard = () => {
             icon={Person}
             iconColor="error"
             loading={loading}
+            key={'inactive_students'}
           />
           <StatCard
             title="This Month Enrollment"
@@ -405,57 +463,160 @@ const Dashboard = () => {
             icon={PersonAdd}
             iconColor="primary"
             loading={loading}
+            key={'this_month_enrollment'}
           />
         </Grid>
 
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            transition: 'all 240ms ease-in-out',
-            mt: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: '500' }}>
-              Detailed Insights
-            </Typography>
-          </Box>
-        </Box>
-        <Grid container spacing={2} style={{ padding: 10 }}>
-          <StatCard
-            title="Students with Documents"
-            count={stats?.totalDocuments ?? 0}
-            tooltipHtml="Number of Students have Documents attached."
-            loading={loading}
-          />
-          <StatCard
-            title="Students without Documents"
-            count={stats?.missingDocuments ?? 0}
-            tooltipHtml="Number of Students don't have Documents attached."
-            loading={loading}
-            iconColor="error"
-          />
-          <StatCard
-            title="This Month Earning"
-            count={`₹${(billing.mrr || 0).toLocaleString()}`}
-            loading={loading}
-            icon={CurrencyRupee}
-            iconColor="success"
-          />
-          <StatCard
-            title="Due Amount"
-            count={`₹${billing.dueAmount(students).total_due_amount.toLocaleString()}`}
-            iconColor="error"
-            loading={loading}
-            icon={CurrencyRupee}
-            tooltipHtml="Number of Students have pending Basic Fees."
-          />
+        <Grid container spacing={2}>
+          <Grid item size={{ sm: 9 }}>
+            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
+              <Typography variant="text" sx={{ fontWeight: 'bold' }}>
+                Student Enrolled in current Year : {new Date().getFullYear()}
+              </Typography>
+              <BarChart
+                loading={loading}
+                dataset={monthlyData}
+                borderRadius={20}
+                {...chartSetting}
+              />
+            </Paper>
+          </Grid>
+          <Grid item size={{ sm: 3 }}>
+            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
+              <Typography
+                variant="text"
+                sx={{
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  textAlign: 'center',
+                }}
+              >
+                <Box>
+                  Earning during current year : {billing.getCurrentYearEarnings().financialYear}
+                </Box>
+                <IconButton
+                  size="small"
+                  onClick={() => setCurrentYearEarningVisibility(!currentYearEarningVisibility)}
+                >
+                  {currentYearEarningVisibility ? <Visibility /> : <VisibilityOff />}
+                </IconButton>
+              </Typography>
+              <List sx={{ mt: 3 }}>
+                <ListItem
+                  secondaryAction={`₹${
+                    !currentYearEarningVisibility
+                      ? '****'
+                      : billing.getCurrentYearEarnings().totalRevenue
+                  }`}
+                >
+                  <ListItemAvatar>
+                    <AccountBalanceWallet />
+                  </ListItemAvatar>
+                  <ListItemText primary="Earning" sx={{ color: 'grey' }} />
+                </ListItem>
+                <ListItem
+                  secondaryAction={`₹${
+                    !currentYearEarningVisibility
+                      ? '****'
+                      : billing.getCurrentYearEarnings().totalBasicFees
+                  }`}
+                >
+                  <ListItemAvatar>
+                    <Savings />
+                  </ListItemAvatar>
+                  <ListItemText primary="Basic Fee" sx={{ color: 'grey' }} />
+                </ListItem>
+                <ListItem
+                  secondaryAction={`₹${
+                    !currentYearEarningVisibility
+                      ? '****'
+                      : billing.getCurrentYearEarnings().totalSeatFees
+                  }`}
+                >
+                  <ListItemAvatar>
+                    <AirlineSeatReclineNormal />
+                  </ListItemAvatar>
+                  <ListItemText primary="Seat Reservation Fee" sx={{ color: 'grey' }} />
+                </ListItem>
+                <ListItem
+                  secondaryAction={`₹${
+                    !currentYearEarningVisibility
+                      ? '****'
+                      : billing.getCurrentYearEarnings().totalLockerFees
+                  }`}
+                >
+                  <ListItemAvatar>
+                    <LockClock />
+                  </ListItemAvatar>
+                  <ListItemText primary="Locker Reservation Fee" sx={{ color: 'grey' }} />
+                </ListItem>
+              </List>
+            </Paper>
+          </Grid>
         </Grid>
 
+        <Grid container spacing={2}>
+          <Grid item size={{ sm: 12, md: 9 }}>
+            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 310, borderRadius: 2 }}>
+              <Typography variant="text" sx={{ fontWeight: 'bold' }}>
+                Revenue Growth (Last 12 Months)
+              </Typography>
+              <Box sx={{ mt: 2 }}>
+                {(() => {
+                  const growth = billing.getMonthlyGrowthSeries({ months: 12 }); // Get growth data
+                  return (
+                    <LineChart
+                      xAxis={growth.xAxis} // Month labels
+                      series={growth.series} // Total revenue values
+                      height={280}
+                      loading={loading}
+                      margin={{
+                        bottom: 40,
+                      }}
+                    />
+                  );
+                })()}
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item size={{ sm: 12, md: 3 }}>
+            <Grid container spacing={2} sx={{ mt: 2 }}>
+              <Grid item sx={{ width: '100%' }}>
+                <StatCard
+                  title="This Month Earning"
+                  count={`₹${(billing.mrr || 0).toLocaleString()}`}
+                  loading={loading}
+                  icon={CurrencyRupee}
+                  iconColor="success"
+                  showVisibleFunctionality
+                  grid={{ xs: 12, sm: 12, md: 12 }}
+                />
+              </Grid>
+              <Grid item sx={{ width: '100%' }}>
+                <StatCard
+                  title="Students with Documents"
+                  count={stats?.totalDocuments ?? 0}
+                  tooltipHtml="Number of Students have Documents attached."
+                  loading={loading}
+                  grid={{ xs: 12, sm: 12, md: 12 }}
+                />
+              </Grid>
+              <Grid item sx={{ width: '100%' }}>
+                <StatCard
+                  title="Students without Documents"
+                  count={stats?.missingDocuments ?? 0}
+                  tooltipHtml="Number of Students don't have Documents attached."
+                  loading={loading}
+                  iconColor="error"
+                  grid={{ xs: 12, sm: 12, md: 12 }}
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+
+        {/* Table for Due Amount and Upcoming Due */}
         <Grid container spacing={2} sx={{ p: 1 }}>
           <Grid item size={{ xs: 12, sm: 6 }}>
             <Box
@@ -508,73 +669,6 @@ const Dashboard = () => {
               amountTextColor="warning.main"
               handlePaymentClick={handlePaymentClick}
             />
-          </Grid>
-        </Grid>
-
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            transition: 'all 240ms ease-in-out',
-            mt: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: '500' }}>
-              Analytics
-            </Typography>
-          </Box>
-        </Box>
-
-        <Grid container spacing={2}>
-          <Grid item size={{ sm: 9 }}>
-            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
-              <Typography variant="text" sx={{ fontWeight: 'bold' }}>
-                Student Enrolled in current Year : {new Date().getFullYear()}
-              </Typography>
-              <BarChart
-                loading={loading}
-                dataset={monthlyData}
-                borderRadius={20}
-                {...chartSetting}
-              />
-            </Paper>
-          </Grid>
-          <Grid item size={{ sm: 3 }}>
-            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
-              <Typography variant="text" sx={{ fontWeight: 'bold' }}>
-                Earning during current year : {billing.getCurrentYearEarnings().financialYear}
-              </Typography>
-              <List sx={{ mt: 3 }}>
-                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalRevenue}`}>
-                  <ListItemAvatar>
-                    <AccountBalanceWallet />
-                  </ListItemAvatar>
-                  <ListItemText primary="Earning" sx={{ color: 'grey' }} />
-                </ListItem>
-                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalBasicFees}`}>
-                  <ListItemAvatar>
-                    <Savings />
-                  </ListItemAvatar>
-                  <ListItemText primary="Basic Fee" sx={{ color: 'grey' }} />
-                </ListItem>
-                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalSeatFees}`}>
-                  <ListItemAvatar>
-                    <AirlineSeatReclineNormal />
-                  </ListItemAvatar>
-                  <ListItemText primary="Seat Reservation Fee" sx={{ color: 'grey' }} />
-                </ListItem>
-                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalLockerFees}`}>
-                  <ListItemAvatar>
-                    <LockClock />
-                  </ListItemAvatar>
-                  <ListItemText primary="Locker Reservation Fee" sx={{ color: 'grey' }} />
-                </ListItem>
-              </List>
-            </Paper>
           </Grid>
         </Grid>
       </Box>

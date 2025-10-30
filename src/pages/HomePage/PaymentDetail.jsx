@@ -113,9 +113,17 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
         { label: 'Seat Reservation Fee', value: payment?.seatFee ?? 0 },
         {
           label: 'Next Payment Date',
-          value: payment?.nextPaymentDate
-            ? formatFirebaseTimestamp(payment.nextPaymentDate)
-            : 'N/A',
+          value: payment?.nextPaymentDate ? (
+            <Box sx={{ fontWeight: 'bold' }}>
+              {formatFirebaseTimestamp(payment.nextPaymentDate)}
+            </Box>
+          ) : (
+            'N/A'
+          ),
+        },
+        {
+          label: 'Payment Method',
+          value: payment?.paymentBy ?? 'CASH',
         },
       ]),
       icon: <ThumbUpAltOutlined />,
@@ -151,7 +159,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
     <Box sx={{ mt: 2 }}>
       <form onSubmit={handleSubmit(submit)} noValidate>
         <Grid container size={24} spacing={2}>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid item size={{ xs: 6, sm: 3 }}>
             <Typography sx={labelSx}>Subscription Type</Typography>
             <Controller
               name="subscriptionType"
@@ -173,7 +181,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid item size={{ xs: 6, sm: 3 }}>
             <Typography sx={labelSx}>Subscription Duration</Typography>
             <Controller
               name="subscriptionDuration"
@@ -206,7 +214,28 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid item size={{ xs: 6, sm: 6 }}>
+            <Typography sx={labelSx}>Payment Method</Typography>
+            <Controller
+              name="paymentBy"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  fullWidth
+                  size="small"
+                  placeholder="Select type"
+                  error={!!errors?.paymentBy}
+                  helperText={errors?.paymentBy?.message || ''}
+                >
+                  <MenuItem value="CASH">Cash</MenuItem>
+                  <MenuItem value="ONLINE">Online</MenuItem>
+                </TextField>
+              )}
+            />
+          </Grid>
+          <Grid item size={{ xs: 6, sm: 6 }}>
             <Typography sx={labelSx}>Payment Date</Typography>
             <Controller
               name="paymentDate"
@@ -224,7 +253,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid item size={{ xs: 6, sm: 6 }}>
             <Typography sx={labelSx}>Basic Fee</Typography>
             <Controller
               name="basicFee"
@@ -245,7 +274,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid item size={{ xs: 6, sm: 6 }}>
             <Typography sx={labelSx}>Seat Reservation Fee</Typography>
             <Controller
               name="seatFee"
@@ -310,7 +339,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             <Stack direction="row" spacing={2} alignItems="center">
               <Box>
                 <Typography variant="h6">{'Payment Details'}</Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="title1" color="text.primary" sx={{ pl: 1 }}>
                   {student.studentName || 'Unknown Student.'}
                 </Typography>
               </Box>

@@ -214,6 +214,20 @@ export default function StudentList(props) {
                     {safeValue(params.row.phoneNumber)}
                   </Typography>
                 </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <PhoneIcon sx={{ fontSize: 15, color: '#4c7fafff' }} />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {safeValue(params.row.phoneNumber2)}
+                  </Typography>
+                </Box>
               </Box>
             </Box>
           );

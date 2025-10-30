@@ -14,11 +14,10 @@ import {
   Radio,
   Button,
   Typography,
-  InputAdornment,
   Chip,
   MenuItem,
 } from '@mui/material';
-import { Close, CalendarToday, UploadFile } from '@mui/icons-material';
+import { Close, UploadFile } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { useFirebase } from '../../context/Firebase';
 import CustomButton from '../../components/customComponents/CustomButton';
@@ -281,7 +280,25 @@ const StudentAddEdit = ({
               />
             </Grid>
 
-            <Grid item size={{ xs: 12, sm: 6 }}>
+            <Grid item size={{ xs: 6, sm: 3 }}>
+              <Typography sx={labelSx}>Timings</Typography>
+              <Controller
+                name="timings"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    placeholder="6 hours"
+                    fullWidth
+                    size="small"
+                    error={!!errors.timings}
+                    helperText={errors.timings?.message || ''}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 6, sm: 3 }}>
               <Typography sx={labelSx}>Gender</Typography>
               <Controller
                 name="gender"
@@ -372,7 +389,7 @@ const StudentAddEdit = ({
 
             {/* Row 4 */}
             <Grid item size={{ xs: 12, sm: 6 }}>
-              <Typography sx={labelSx}>Phone Number</Typography>
+              <Typography sx={labelSx}>Phone Number - 1</Typography>
               <Controller
                 name="phoneNumber"
                 control={control}
@@ -397,18 +414,25 @@ const StudentAddEdit = ({
             </Grid>
 
             <Grid item size={{ xs: 12, sm: 6 }}>
-              <Typography sx={labelSx}>Timings</Typography>
+              <Typography sx={labelSx}>Phone Number - 2</Typography>
               <Controller
-                name="timings"
+                name="phoneNumber2"
                 control={control}
+                rules={{
+                  //   required: 'Phone number required',
+                  pattern: {
+                    value: /^[0-9]{10}$/,
+                    message: 'Enter a valid 10-digit number',
+                  },
+                }}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    placeholder="6 hours"
+                    placeholder="e.g., 9876543211"
                     fullWidth
                     size="small"
-                    error={!!errors.timings}
-                    helperText={errors.timings?.message || ''}
+                    error={!!errors.phoneNumber2}
+                    helperText={errors.phoneNumber2?.message || 'Digits only'}
                   />
                 )}
               />
@@ -511,7 +535,7 @@ const StudentAddEdit = ({
                   <Typography variant="subtitle1">Fees (First Payment)</Typography>
                 </Grid>
 
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
                   <Typography sx={labelSx}>Subscription Type</Typography>
                   <Controller
                     name="monthlyBilling.subscriptionType"
@@ -533,7 +557,7 @@ const StudentAddEdit = ({
                     )}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
                   <Typography sx={labelSx}>Subscription Duration</Typography>
                   <Controller
                     name="monthlyBilling.subscriptionDuration"
@@ -565,6 +589,27 @@ const StudentAddEdit = ({
                         error={!!errors?.monthlyBilling?.subscriptionDuration}
                         helperText={errors?.monthlyBilling?.subscriptionDuration?.message || ''}
                       />
+                    )}
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
+                  <Typography sx={labelSx}>Payment Method</Typography>
+                  <Controller
+                    name="monthlyBilling.paymentBy"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        select
+                        fullWidth
+                        size="small"
+                        placeholder="Select type"
+                        error={!!errors?.monthlyBilling?.paymentBy}
+                        helperText={errors?.monthlyBilling?.paymentBy?.message || ''}
+                      >
+                        <MenuItem value="CASH">Cash</MenuItem>
+                        <MenuItem value="ONLINE">Online</MenuItem>
+                      </TextField>
                     )}
                   />
                 </Grid>

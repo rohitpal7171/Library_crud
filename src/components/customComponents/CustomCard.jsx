@@ -7,17 +7,17 @@ import {
   Box,
   Skeleton,
   Link as MuiLink,
+  IconButton,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import { Link as RouterLink } from 'react-router-dom';
-import { defaultBorderColor, defaultCheckValue } from '../../utils/utils';
+import { defaultBorderColor } from '../../utils/utils';
+import { useState } from 'react';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 const defaultFormatCount = (v) => v;
 
-/**
- * StatCard — generic small stat card with optional tooltip & link
- */
 export function StatCard({
   title,
   count = 0,
@@ -34,7 +34,9 @@ export function StatCard({
   countVariant = 'h6',
   formatCount = defaultFormatCount,
   iconColor = 'action',
+  showVisibleFunctionality = false,
 }) {
+  const [visible, setVisible] = useState(false);
   const content = (
     <Card
       variant="outlined"
@@ -57,14 +59,24 @@ export function StatCard({
               </Grid>
             )}
             <Grid size={Icon ? 10 : 12}>
-              <Box sx={{ display: 'flex' }}>
-                <Typography variant={titleVariant} sx={{ ml: 1.5, m: 0 }}>
-                  {title}
-                </Typography>
-                {tooltipHtml && (
-                  <Tooltip title={<span dangerouslySetInnerHTML={{ __html: tooltipHtml }} />} arrow>
-                    <InfoOutlinedIcon sx={{ ml: 1, mt: 0.5, fontSize: 18, opacity: 0.8 }} />
-                  </Tooltip>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex' }}>
+                  <Typography variant={titleVariant} sx={{ ml: 1.5, m: 0 }}>
+                    {title}
+                  </Typography>
+                  {tooltipHtml && (
+                    <Tooltip
+                      title={<span dangerouslySetInnerHTML={{ __html: tooltipHtml }} />}
+                      arrow
+                    >
+                      <InfoOutlinedIcon sx={{ ml: 1, mt: 0.5, fontSize: 18, opacity: 0.8 }} />
+                    </Tooltip>
+                  )}
+                </Box>
+                {showVisibleFunctionality && (
+                  <IconButton size="small" onClick={() => setVisible(!visible)}>
+                    {visible ? <Visibility /> : <VisibilityOff />}
+                  </IconButton>
                 )}
               </Box>
               <Box>
@@ -73,7 +85,11 @@ export function StatCard({
                   fontWeight={700}
                   sx={{ color: 'text.secondary' }}
                 >
-                  {formatCount(count)}
+                  {showVisibleFunctionality
+                    ? !visible
+                      ? '****'
+                      : formatCount(count)
+                    : formatCount(count)}
                 </Typography>
               </Box>
             </Grid>
@@ -96,122 +112,4 @@ export function StatCard({
   );
 }
 
-/**
- * TextItem — label/value row used by InfoCard (customizable)
- */
-export function TextItem({
-  label,
-  value,
-  checkValue = defaultCheckValue,
-  labelColor = 'text.secondary',
-  zeroFallback = '0',
-}) {
-  return (
-    <Grid item xs={12} sm={6}>
-      <Typography variant="body2" sx={{ color: labelColor, fontWeight: 600 }}>
-        {label}:&nbsp;
-        <Typography component="span" variant="body2" fontWeight={700} color="text.primary">
-          {checkValue(value) ? ` ${value}` : ` ${zeroFallback}`}
-        </Typography>
-      </Typography>
-    </Grid>
-  );
-}
-
-/**
- * InfoCard — card with icon + title + a grid of label/value items
- */
-export function InfoCard({
-  to = '',
-  icon: Icon = DescriptionOutlinedIcon,
-  title,
-  data = [], // array of { label, value }
-  loading = false,
-  borderColor,
-  bodyPadding = 1,
-  cardPadding = 2,
-  height = '100%',
-  grid = { xs: 12, md: 6 },
-  titleVariant = 'subtitle1',
-  renderItem,
-  itemsSpacing = 1,
-  sx = {},
-}) {
-  const defaultRenderer = (item, idx) => (
-    <TextItem key={idx} label={item.label} value={item.value} />
-  );
-
-  const content = (
-    <Card
-      variant="outlined"
-      sx={{
-        borderColor: borderColor || ((theme) => theme.palette.divider),
-        borderRadius: 2,
-        p: cardPadding,
-        height,
-        ...sx,
-      }}
-    >
-      <CardContent sx={{ p: 0 }}>
-        {loading ? (
-          <>
-            <Skeleton variant="text" height={28} width="60%" />
-            <Skeleton variant="rounded" height={96} sx={{ mt: 1 }} />
-          </>
-        ) : (
-          <Grid container spacing={2} sx={{ height: '100%' }}>
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                {Icon && <Icon sx={{ fontSize: 24 }} />}
-                <Typography variant={titleVariant} sx={{ ml: 1.5 }}>
-                  {title}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12}>
-              <Grid container spacing={itemsSpacing} sx={{ px: bodyPadding }}>
-                {data.map(renderItem || defaultRenderer)}
-              </Grid>
-            </Grid>
-          </Grid>
-        )}
-      </CardContent>
-    </Card>
-  );
-
-  return (
-    <Grid item {...grid}>
-      {to ? (
-        <MuiLink component={RouterLink} to={to} underline="none" color="inherit">
-          {content}
-        </MuiLink>
-      ) : (
-        content
-      )}
-    </Grid>
-  );
-}
-
-/**
- * Example wrapper row usage
- *
- * <Grid container spacing={2}>
- *   <StatCard title="Total Students" count={1234} to="/students" />
- *   <StatCard title="Active" count={1200} icon={CheckCircleOutline} />
- *   <StatCard title="Inactive" count={34} tooltipHtml="<b>Note:</b> last 30 days" />
- *   <StatCard title="Docs" count={48} icon={DescriptionOutlinedIcon} />
- *
- *   <InfoCard
- *     to="/analytics"
- *     title="Insights"
- *     icon={InsightsOutlined}
- *     data={[
- *       { label: 'Seat vs Locker', value: '45 / 30' },
- *       { label: 'Missing Docs', value: 12 },
- *       { label: 'Aadhaar Linked %', value: '86%' },
- *     ]}
- *   />
- * </Grid>
- */
-
-export default { StatCard, InfoCard, TextItem };
+export default { StatCard };

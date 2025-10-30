@@ -1,5 +1,3 @@
-import { Typography } from '@mui/material';
-
 export const defaultBoxPadding = '20px';
 export const defaultBorderColor = '#d9d9d9';
 export const labelSx = { fontSize: 13, fontWeight: 600, mb: 0.5 };
@@ -10,6 +8,7 @@ export const defaultMonthlyPaymentSchema = {
   basicFee: 0,
   lockerFee: 0,
   seatFee: 0,
+  paymentBy: 'CASH',
 };
 
 export const defaultSchemaValues = {
@@ -19,6 +18,7 @@ export const defaultSchemaValues = {
   dateOfJoining: '',
   gender: 'Male',
   phoneNumber: '',
+  phoneNumber2: '',
   referredBy: '',
   seatReserved: false,
   seatNumber: 0,
@@ -31,13 +31,6 @@ export const defaultSchemaValues = {
   aadhaarNumber: '',
   active: true,
   monthlyBilling: defaultMonthlyPaymentSchema,
-  // monthlyBilling: {
-  //   subscriptionType: 'month',
-  //   subscriptionDuration: 1,
-  //   basicFee: 0,
-  //   lockerFee: 0,
-  //   seatFee: 0,
-  // },
 };
 
 export const formatFileSize = (bytes) => {
