@@ -109,8 +109,8 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
         { label: 'Subscription Type', value: payment?.subscriptionType ?? 'month' },
         { label: 'Subscription Duration', value: payment?.subscriptionDuration ?? '1' },
         { label: 'Basic Fees', value: payment?.basicFee ?? 0 },
-        { label: 'Locker Fees', value: payment?.lockerFee ?? 0 },
-        { label: 'Seat Fees', value: payment?.seatFee ?? 0 },
+        { label: 'Locker Reservation Fee', value: payment?.lockerFee ?? 0 },
+        { label: 'Seat Reservation Fee', value: payment?.seatFee ?? 0 },
         {
           label: 'Next Payment Date',
           value: payment?.nextPaymentDate
@@ -246,7 +246,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             />
           </Grid>
           <Grid item size={{ xs: 12, sm: 6 }}>
-            <Typography sx={labelSx}>Seat Fee</Typography>
+            <Typography sx={labelSx}>Seat Reservation Fee</Typography>
             <Controller
               name="seatFee"
               control={control}
@@ -263,7 +263,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             />
           </Grid>
           <Grid item size={{ xs: 12, sm: 6 }}>
-            <Typography sx={labelSx}>Locker Fee</Typography>
+            <Typography sx={labelSx}>Locker Reservation Fee</Typography>
             <Controller
               name="lockerFee"
               control={control}

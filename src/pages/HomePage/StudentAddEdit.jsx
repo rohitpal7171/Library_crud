@@ -592,7 +592,7 @@ const StudentAddEdit = ({
                 </Grid>
                 {seatReservedValue && (
                   <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
-                    <Typography sx={labelSx}>Seat Fee</Typography>
+                    <Typography sx={labelSx}>Seat Reservation Fee</Typography>
                     <Controller
                       name="monthlyBilling.seatFee"
                       control={control}
@@ -611,7 +611,7 @@ const StudentAddEdit = ({
                 )}
                 {lockerValue && (
                   <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
-                    <Typography sx={labelSx}>Locker Fee</Typography>
+                    <Typography sx={labelSx}>Locker Reservation Fee</Typography>
                     <Controller
                       name="monthlyBilling.lockerFee"
                       control={control}

@@ -222,30 +222,30 @@ export default function StudentList(props) {
     ];
 
     if (!isXs)
-      cols.push({
-        field: 'fatherName',
-        headerName: 'Parent',
-        flex: 0.8,
-        minWidth: 90,
-        renderCell: (p) => safeValue(p.value),
-      });
+      if (isMd) {
+        // cols.push({
+        //   field: 'fatherName',
+        //   headerName: 'Parent',
+        //   flex: 0.8,
+        //   minWidth: 90,
+        //   renderCell: (p) => safeValue(p.value),
+        // });
 
-    if (isMd) {
-      // cols.push({
-      //   field: 'dateOfBirth',
-      //   headerName: 'DOB',
-      //   flex: 0.6,
-      //   width: 80,
-      //   renderCell: (p) => safeValue(p.value),
-      // });
-      cols.push({
-        field: 'dateOfJoining',
-        headerName: 'DOJ',
-        flex: 0.8,
-        width: 100,
-        renderCell: (p) => safeValue(formatDate(p.value)),
-      });
-    }
+        // cols.push({
+        //   field: 'dateOfBirth',
+        //   headerName: 'DOB',
+        //   flex: 0.6,
+        //   width: 80,
+        //   renderCell: (p) => safeValue(p.value),
+        // });
+        cols.push({
+          field: 'dateOfJoining',
+          headerName: 'DOJ',
+          flex: 0.8,
+          width: 100,
+          renderCell: (p) => safeValue(formatDate(p.value)),
+        });
+      }
 
     if (!isXs) {
       cols.push({
@@ -348,29 +348,29 @@ export default function StudentList(props) {
         },
       });
 
-      cols.push({
-        field: 'address',
-        headerName: 'Address',
-        flex: 0.8,
-        minWidth: 140,
-        sortable: false,
-        filterable: false,
-        renderCell: (p) => (
-          <Typography
-            variant="body2"
-            sx={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              color: 'text.primary',
-              marginTop: '20px',
-            }}
-            title={safeValue(p.row.address)}
-          >
-            {safeValue(p.row.address)}
-          </Typography>
-        ),
-      });
+      // cols.push({
+      //   field: 'address',
+      //   headerName: 'Address',
+      //   flex: 0.8,
+      //   minWidth: 140,
+      //   sortable: false,
+      //   filterable: false,
+      //   renderCell: (p) => (
+      //     <Typography
+      //       variant="body2"
+      //       sx={{
+      //         whiteSpace: 'nowrap',
+      //         overflow: 'hidden',
+      //         textOverflow: 'ellipsis',
+      //         color: 'text.primary',
+      //         marginTop: '20px',
+      //       }}
+      //       title={safeValue(p.row.address)}
+      //     >
+      //       {safeValue(p.row.address)}
+      //     </Typography>
+      //   ),
+      // });
     }
 
     cols.push({

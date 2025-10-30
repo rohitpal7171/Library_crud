@@ -26,7 +26,15 @@ export default function MiniStudentList({
       </Box>
     );
   return (
-    <List sx={{ bgcolor: 'background.paper', padding: 2, maxHeight: '4800px', overflow: 'auto' }}>
+    <List
+      sx={{
+        bgcolor: 'background.paper',
+        padding: 2,
+        maxHeight: '4800px',
+        overflow: 'auto',
+        borderRadius: 2,
+      }}
+    >
       {students.length ? (
         students.map((student, index) => {
           const initials = (student.studentName || 'Student')

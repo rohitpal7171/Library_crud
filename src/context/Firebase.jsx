@@ -318,24 +318,19 @@ export const FirebaseProvider = (props) => {
       subcollections = ['monthlyBilling'],
       orderField = 'createdAt',
       orderDirection = 'desc',
-    }) => {
+      // Optional override per subcollection: { monthlyBilling: { field: 'createdAt', direction: 'asc' } }
+      subcollectionOrder = {},
+    } = {}) => {
       try {
-        // Build base query
+        // --- Parent collection (ordered) ---
         const colRef = collection(firebaseCloudFirestore, collectionName);
-        // Conditional Firestore query
-        let q;
-        if (collectionName === 'students') {
-          q = query(colRef, where('active', '==', true), orderBy(orderField, orderDirection));
-        } else {
-          q = query(colRef, orderBy(orderField, orderDirection));
-        }
-
-        const snapshot = await getDocs(q);
+        let parentQuery = query(colRef, orderBy(orderField, orderDirection));
+        const snapshot = await getDocs(parentQuery);
 
         // Map base docs
         const baseDocs = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
-          _ref: docSnap.ref, // keep for subcollection fetch
+          _ref: docSnap.ref,
           ...docSnap.data(),
         }));
 
@@ -343,20 +338,51 @@ export const FirebaseProvider = (props) => {
           return { data: baseDocs.map(({ _ref, ...rest }) => rest) };
         }
 
-        // Fetch subcollections for each doc
+        // Helper: normalize a date-like value to milliseconds for sorting
+        const toMillis = (v) => {
+          if (!v) return Number.NEGATIVE_INFINITY;
+          if (v?.toMillis) return v.toMillis();
+          if (v instanceof Date) return v.getTime();
+          const t = new Date(v).getTime();
+          return isNaN(t) ? Number.NEGATIVE_INFINITY : t;
+        };
+
         const results = await Promise.allSettled(
           baseDocs.map(async (parent) => {
             const subData = {};
 
             await Promise.all(
               subcollections.map(async (subName) => {
+                const { field = orderField, direction = orderDirection } =
+                  subcollectionOrder[subName] || {};
+
                 try {
                   const subRef = collection(parent._ref, subName);
-                  const subSnap = await getDocs(subRef);
-                  subData[subName] = subSnap.docs.map((d) => ({
-                    id: d.id,
-                    ...d.data(),
-                  }));
+
+                  // Try Firestore-side ordering
+                  let subQ = query(subRef, orderBy(field, direction));
+                  let subSnap;
+
+                  try {
+                    subSnap = await getDocs(subQ);
+                    subData[subName] = subSnap.docs.map((d) => ({
+                      id: d.id,
+                      ...d.data(),
+                    }));
+                  } catch (orderingErr) {
+                    // If Firestore can't order (missing field/index), do client-side sort
+                    const rawSnap = await getDocs(subRef);
+                    const arr = rawSnap.docs.map((d) => ({
+                      id: d.id,
+                      ...d.data(),
+                    }));
+
+                    subData[subName] = arr.sort((a, b) => {
+                      const aT = toMillis(a?.[field]);
+                      const bT = toMillis(b?.[field]);
+                      return direction === 'desc' ? bT - aT : aT - bT;
+                    });
+                  }
                 } catch (err) {
                   console.error(`Failed to fetch subcollection "${subName}" for ${parent.id}`, err);
                   subData[subName] = [];
@@ -370,7 +396,6 @@ export const FirebaseProvider = (props) => {
         );
 
         const data = results.map((r, i) => (r.status === 'fulfilled' ? r.value : baseDocs[i]));
-
         return { data };
       } catch (error) {
         console.error('getCollectionWithSubcollections error', error);

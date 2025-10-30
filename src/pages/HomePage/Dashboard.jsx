@@ -1,7 +1,27 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { defaultBoxPadding } from '../../utils/utils';
-import { Box, Grid, Paper, Typography } from '@mui/material';
-import { CurrencyRupee, People, Person, PersonAdd } from '@mui/icons-material';
+import {
+  Avatar,
+  Box,
+  Grid,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Paper,
+  Typography,
+} from '@mui/material';
+import {
+  AccountBalanceWallet,
+  AccountBalanceWalletOutlined,
+  AirlineSeatReclineNormal,
+  CurrencyRupee,
+  LockClock,
+  People,
+  Person,
+  PersonAdd,
+  Savings,
+} from '@mui/icons-material';
 import { StatCard } from '../../components/customComponents/CustomCard';
 import { BarChart } from '@mui/x-charts';
 import { useFirebase } from '../../context/Firebase';
@@ -38,9 +58,14 @@ const Dashboard = () => {
     fetchStudentData();
   }, [fetchStudentData]);
 
+  const activeStudents = useMemo(
+    () => (students?.length ? students.filter((s) => s.active) : []),
+    [students]
+  );
+
   const stats = useMemo(() => {
     const total = students.length;
-    const active = students.filter((s) => s.active).length;
+    const active = activeStudents.length;
     const inactive = total - active;
 
     // This month enrollments
@@ -87,7 +112,7 @@ const Dashboard = () => {
       genderCount,
       monthlyJoining,
     };
-  }, [students]);
+  }, [students, activeStudents]);
 
   const monthOrder = [
     'Jan',
@@ -253,6 +278,38 @@ const Dashboard = () => {
         revenue: arr.reduce((sum, e) => sum + getEntryTotal(e), 0),
       }));
 
+    const getCurrentYearEarnings = (entries = allEntries, today = new Date()) => {
+      const currentYear = today.getFullYear();
+
+      // Determine financial year start and end
+      // (If current month < April, financial year started last year)
+      const fyStartYear = today.getMonth() + 1 < 4 ? currentYear - 1 : currentYear;
+      const fyStart = new Date(fyStartYear, 3, 1); // 1 April (month index 3)
+      const fyEnd = new Date(fyStartYear + 1, 2, 31, 23, 59, 59, 999); // 31 March next year
+
+      // Filter entries by paymentDate in FY range
+      const entriesInYear = entries.filter((e) => {
+        if (!e.paymentDate) return false;
+        const d = e.paymentDate?.seconds
+          ? new Date(e.paymentDate.seconds * 1000)
+          : new Date(e.paymentDate);
+        return d >= fyStart && d <= fyEnd;
+      });
+
+      // Sum totals
+      const totalRevenue = entriesInYear.reduce((sum, e) => sum + getEntryTotal(e), 0);
+      const totalBasicFees = entriesInYear.reduce((sum, e) => sum + Number(e.basicFee || 0), 0);
+      const totalSeatFees = entriesInYear.reduce((sum, e) => sum + Number(e.seatFee || 0), 0);
+      const totalLockerFees = entriesInYear.reduce((sum, e) => sum + Number(e.lockerFee || 0), 0);
+
+      return {
+        financialYear: `${fyStart.getFullYear()}-${fyEnd.getFullYear()}`,
+        totalRevenue,
+        totalBasicFees,
+        totalSeatFees,
+        totalLockerFees,
+      };
+    };
     return {
       totalRevenue,
       mrr,
@@ -263,6 +320,7 @@ const Dashboard = () => {
       subscriptionMix,
       revenueByMonth,
       dueInNextDays,
+      getCurrentYearEarnings,
     };
   }, [students]);
 
@@ -419,7 +477,7 @@ const Dashboard = () => {
               </Box>
             </Box>
             <MiniStudentList
-              students={billing.dueAmount(students).list_of_student}
+              students={billing.dueAmount(activeStudents).list_of_student}
               loading={loading}
               amountTextColor="error.main"
               handlePaymentClick={handlePaymentClick}
@@ -445,7 +503,7 @@ const Dashboard = () => {
               </Box>
             </Box>
             <MiniStudentList
-              students={billing.dueInNextDays(students, 7).list_of_student}
+              students={billing.dueInNextDays(activeStudents, 7).list_of_student}
               loading={loading}
               amountTextColor="warning.main"
               handlePaymentClick={handlePaymentClick}
@@ -472,8 +530,8 @@ const Dashboard = () => {
         </Box>
 
         <Grid container spacing={2}>
-          <Grid item size={{ sm: 12 }}>
-            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300 }}>
+          <Grid item size={{ sm: 9 }}>
+            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
               <Typography variant="text" sx={{ fontWeight: 'bold' }}>
                 Student Enrolled in current Year : {new Date().getFullYear()}
               </Typography>
@@ -483,6 +541,39 @@ const Dashboard = () => {
                 borderRadius={20}
                 {...chartSetting}
               />
+            </Paper>
+          </Grid>
+          <Grid item size={{ sm: 3 }}>
+            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
+              <Typography variant="text" sx={{ fontWeight: 'bold' }}>
+                Earning during current year : {billing.getCurrentYearEarnings().financialYear}
+              </Typography>
+              <List sx={{ mt: 3 }}>
+                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalRevenue}`}>
+                  <ListItemAvatar>
+                    <AccountBalanceWallet />
+                  </ListItemAvatar>
+                  <ListItemText primary="Earning" sx={{ color: 'grey' }} />
+                </ListItem>
+                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalBasicFees}`}>
+                  <ListItemAvatar>
+                    <Savings />
+                  </ListItemAvatar>
+                  <ListItemText primary="Basic Fee" sx={{ color: 'grey' }} />
+                </ListItem>
+                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalSeatFees}`}>
+                  <ListItemAvatar>
+                    <AirlineSeatReclineNormal />
+                  </ListItemAvatar>
+                  <ListItemText primary="Seat Reservation Fee" sx={{ color: 'grey' }} />
+                </ListItem>
+                <ListItem secondaryAction={`₹${billing.getCurrentYearEarnings().totalLockerFees}`}>
+                  <ListItemAvatar>
+                    <LockClock />
+                  </ListItemAvatar>
+                  <ListItemText primary="Locker Reservation Fee" sx={{ color: 'grey' }} />
+                </ListItem>
+              </List>
             </Paper>
           </Grid>
         </Grid>
