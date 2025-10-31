@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import SidebarDrawer from '../Common/SidebarDrawer';
 import { Box, Toolbar } from '@mui/material';
+import { defaultDashboardBackgroundColor } from '../../utils/utils';
 
 const drawerWidth = 240;
 const closedWidth = 57; // ~theme.spacing(7) + 1px
@@ -54,7 +55,7 @@ const HomePage = () => {
             ml: `${leftOffset}px`,
             boxSizing: 'border-box',
             minHeight: '100vh',
-            background: '#f6f7fb',
+            background: defaultDashboardBackgroundColor,
           };
         }}
       >

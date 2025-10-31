@@ -12,7 +12,7 @@ import {
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import { Link as RouterLink } from 'react-router-dom';
-import { defaultBorderColor } from '../../utils/utils';
+import { defaultBorderColor, defaultBoxBorderRadius } from '../../utils/utils';
 import { useState } from 'react';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 
@@ -42,7 +42,7 @@ export function StatCard({
       variant="outlined"
       sx={{
         borderColor: borderColor || ((theme) => theme.palette.divider),
-        borderRadius: 2,
+        borderRadius: defaultBoxBorderRadius,
         p: cardPadding,
         height,
         ...sx,

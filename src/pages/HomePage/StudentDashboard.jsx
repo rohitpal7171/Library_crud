@@ -3,7 +3,7 @@ import FilterAndActions from './FilterAndActions';
 import StudentList from './StudentList';
 import { useFirebase } from '../../context/Firebase';
 import { Box, Tab, Tabs } from '@mui/material';
-import { defaultBorderColor, defaultBoxPadding } from '../../utils/utils';
+import { defaultBorderColor, defaultBoxBorderRadius, defaultBoxPadding } from '../../utils/utils';
 
 const StudentDashboard = () => {
   const [students, setStudents] = useState([]);
@@ -66,7 +66,7 @@ const StudentDashboard = () => {
         variant="scrollable"
         scrollButtons="auto"
         aria-label="scrollable auto tabs example"
-        sx={{ border: `1px solid ${defaultBorderColor}`, borderRadius: 2 }}
+        sx={{ border: `1px solid ${defaultBorderColor}`, borderRadius: defaultBoxBorderRadius }}
       >
         <Tab value="active" label="Active Students" />
         <Tab value="inactive" label="Inactive Students" />

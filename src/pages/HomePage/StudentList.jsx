@@ -17,7 +17,12 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import MaleIcon from '@mui/icons-material/Male';
 import FemaleIcon from '@mui/icons-material/Female';
 import { DataGrid } from '@mui/x-data-grid';
-import { defaultBoxPadding, formatDate, getDueDateDisplay } from '../../utils/utils';
+import {
+  defaultBoxBorderRadius,
+  defaultBoxPadding,
+  formatDate,
+  getDueDateDisplay,
+} from '../../utils/utils';
 import { useFirebase } from '../../context/Firebase';
 import StudentAddEdit from './StudentAddEdit';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
@@ -242,21 +247,6 @@ export default function StudentList(props) {
 
     if (!isXs)
       if (isMd) {
-        // cols.push({
-        //   field: 'fatherName',
-        //   headerName: 'Parent',
-        //   flex: 0.8,
-        //   minWidth: 90,
-        //   renderCell: (p) => safeValue(p.value),
-        // });
-
-        // cols.push({
-        //   field: 'dateOfBirth',
-        //   headerName: 'DOB',
-        //   flex: 0.6,
-        //   width: 80,
-        //   renderCell: (p) => safeValue(p.value),
-        // });
         cols.push({
           field: 'dateOfJoining',
           headerName: 'DOJ',
@@ -381,30 +371,6 @@ export default function StudentList(props) {
           );
         },
       });
-
-      // cols.push({
-      //   field: 'address',
-      //   headerName: 'Address',
-      //   flex: 0.8,
-      //   minWidth: 140,
-      //   sortable: false,
-      //   filterable: false,
-      //   renderCell: (p) => (
-      //     <Typography
-      //       variant="body2"
-      //       sx={{
-      //         whiteSpace: 'nowrap',
-      //         overflow: 'hidden',
-      //         textOverflow: 'ellipsis',
-      //         color: 'text.primary',
-      //         marginTop: '20px',
-      //       }}
-      //       title={safeValue(p.row.address)}
-      //     >
-      //       {safeValue(p.row.address)}
-      //     </Typography>
-      //   ),
-      // });
     }
 
     cols.push({
@@ -569,6 +535,7 @@ export default function StudentList(props) {
             style={{ height: '100%', width: '100%' }}
             loading={loading}
             sx={{
+              borderRadius: defaultBoxBorderRadius,
               '& .MuiDataGrid-columnHeader, & .MuiDataGrid-scrollbarFiller': {
                 backgroundColor: '#f0f4ff !important',
                 color: '#4d4d4d !important',

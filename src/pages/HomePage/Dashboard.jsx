@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { defaultBoxPadding } from '../../utils/utils';
+import { defaultBoxBorderRadius, defaultBoxPadding } from '../../utils/utils';
 import {
   Box,
   Grid,
@@ -417,22 +417,6 @@ const Dashboard = () => {
         />
       )}
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>
-        {/* <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            transition: 'all 240ms ease-in-out',
-          }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: '500' }}>
-              Overview
-            </Typography>
-          </Box>
-        </Box> */}
         <Grid container spacing={2}>
           <StatCard
             title="Total Students"
@@ -469,7 +453,10 @@ const Dashboard = () => {
 
         <Grid container spacing={2}>
           <Grid item size={{ sm: 9 }}>
-            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
+            <Paper
+              variant="outlined"
+              sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: defaultBoxBorderRadius }}
+            >
               <Typography variant="text" sx={{ fontWeight: 'bold' }}>
                 Student Enrolled in current Year : {new Date().getFullYear()}
               </Typography>
@@ -482,7 +469,10 @@ const Dashboard = () => {
             </Paper>
           </Grid>
           <Grid item size={{ sm: 3 }}>
-            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: 2 }}>
+            <Paper
+              variant="outlined"
+              sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: defaultBoxBorderRadius }}
+            >
               <Typography
                 variant="text"
                 sx={{
@@ -558,7 +548,10 @@ const Dashboard = () => {
 
         <Grid container spacing={2}>
           <Grid item size={{ sm: 12, md: 9 }}>
-            <Paper variant="outlined" sx={{ p: 2, flex: 1, mt: 2, height: 310, borderRadius: 2 }}>
+            <Paper
+              variant="outlined"
+              sx={{ p: 2, flex: 1, mt: 2, height: 310, borderRadius: defaultBoxBorderRadius }}
+            >
               <Typography variant="text" sx={{ fontWeight: 'bold' }}>
                 Revenue Growth (Last 12 Months)
               </Typography>

@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import { Skeleton } from '@mui/material';
 import { Empty } from 'antd';
+import { defaultBoxBorderRadius } from '../../utils/utils';
 
 export default function MiniStudentList({
   students = [],
@@ -32,7 +33,7 @@ export default function MiniStudentList({
         padding: 2,
         maxHeight: '4800px',
         overflow: 'auto',
-        borderRadius: 2,
+        borderRadius: defaultBoxBorderRadius,
       }}
     >
       {students.length ? (
