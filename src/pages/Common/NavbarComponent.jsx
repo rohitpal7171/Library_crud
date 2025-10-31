@@ -18,46 +18,21 @@ const NavbarComponent = (props) => {
   const [adminData, setAdminData] = useState(undefined);
   const [uploading, setUploading] = useState(false);
 
-  const getAdminData = useCallback(async () => {
-    const adminData = await firebaseContext.firebaseGetAdminData();
-    if (!adminData) return;
-
+  const fetchAdminData = useCallback(async () => {
     try {
-      localStorage.setItem(
-        import.meta.env.VITE_SHIVAAY_LIBRARY_LOCALSTORAGE_KEY,
-        JSON.stringify(adminData)
-      );
-      if (adminData.id) {
-        setAdminData(adminData);
-      }
+      const data = await firebaseContext.firebaseGetAdminData();
+      if (data?.id) setAdminData(data);
     } catch (err) {
       showSnackbar({
         severity: 'error',
-        message: err?.message ?? 'Error Storing Admin Data in LocalStorage!',
+        message: err?.message || 'Failed to load admin data!',
       });
     }
   }, [firebaseContext, showSnackbar]);
 
-  const loadFromLocalStorage = useCallback(() => {
-    try {
-      const raw = localStorage.getItem(import.meta.env.VITE_SHIVAAY_LIBRARY_LOCALSTORAGE_KEY);
-      if (!raw) {
-        getAdminData();
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (parsed?.id) setAdminData(parsed);
-    } catch (err) {
-      showSnackbar({
-        severity: 'error',
-        message: err?.message ?? 'Error Parsing Admin Data from LocalStorage!',
-      });
-    }
-  }, [getAdminData, showSnackbar]);
-
   useEffect(() => {
-    loadFromLocalStorage();
-  }, [loadFromLocalStorage]);
+    fetchAdminData();
+  }, [fetchAdminData]);
 
   const drawerIcon = (
     <IconButton
@@ -73,6 +48,13 @@ const NavbarComponent = (props) => {
 
   const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
+    if (!adminData.id) {
+      showSnackbar({
+        severity: 'error',
+        message: 'Create folder named - admin , in firestore first and then try again.',
+      });
+      return;
+    }
     if (!file) return;
     if (file) {
       try {
