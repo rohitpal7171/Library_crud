@@ -216,7 +216,8 @@ export default function StudentDetail({
         field: 'date_of_payment',
         headerName: 'Date of Payment',
         flex: 1,
-        renderCell: (params) => safeValue(params.row.paymentDate),
+        renderCell: (params) =>
+          params?.row?.paymentDate ? safeValue(formatDate(params.row.paymentDate)) : '--',
       },
       {
         field: 'total_amount',
