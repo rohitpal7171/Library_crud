@@ -262,7 +262,22 @@ export default function StudentList(props) {
           headerName: 'DOJ',
           flex: 0.8,
           width: 100,
-          renderCell: (p) => safeValue(formatDate(p.value)),
+          renderCell: (p) => (
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 1,
+                flexDirection: 'column',
+                lineHeight: 1,
+                mt: 2,
+              }}
+            >
+              <Box>{safeValue(formatDate(p.value))}</Box>
+              <Box sx={{ fontWeight: 'bold' }}>
+                {p.row.humanId ? p.row.humanId : 'ID not present'}
+              </Box>
+            </Box>
+          ),
         });
       }
 

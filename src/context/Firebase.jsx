@@ -29,6 +29,7 @@ import {
   setDoc,
   arrayUnion,
   writeBatch,
+  runTransaction,
 } from 'firebase/firestore';
 
 const FirebaseContext = createContext(null);
@@ -41,6 +42,9 @@ const googleProvider = new GoogleAuthProvider();
 const allowedEmails = ['rohit.pal7171@gmail.com', 'shivaaylibrary98@gmail.com'];
 
 export const useFirebase = () => useContext(FirebaseContext);
+
+const HUMAN_ID_PREFIX = 'SHY_';
+const INITIAL_HUMAN_ID_WIDTH = 4;
 
 export const FirebaseProvider = (props) => {
   const [user, setUser] = useState(null);
@@ -119,13 +123,48 @@ export const FirebaseProvider = (props) => {
     []
   );
 
+  async function getNextHumanId(db, sequenceKey) {
+    const seqRef = doc(db, 'sequences', sequenceKey);
+
+    const humanId = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(seqRef);
+      const seq = snap.exists() ? snap.data() : {};
+      const next = seq.next || 1;
+      const width = seq.width || INITIAL_HUMAN_ID_WIDTH;
+
+      // Build the display ID, e.g. SHY_0001
+      const id = `${HUMAN_ID_PREFIX}${String(next).padStart(width, '0')}`;
+
+      // If crossing current width (e.g., 9999 -> 10000), bump stored width
+      const nextWidth = next >= Math.pow(10, width) ? width + 1 : width;
+
+      tx.set(
+        seqRef,
+        {
+          next: next + 1,
+          width: nextWidth,
+          prefix: HUMAN_ID_PREFIX,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      return id;
+    });
+
+    return humanId;
+  }
+
   // cloud Database - to add document with data in collection
   const createDataInFireStore = useCallback(
     async (collectionName = 'students', data) => {
       try {
         const { monthlyBilling, ...restData } = data;
+
+        const humanId = await getNextHumanId(firebaseCloudFirestore, collectionName);
         const modifiedData = {
           ...restData,
+          humanId: humanId,
           createdAt: serverTimestamp(),
           modifiedAt: serverTimestamp(),
         };
