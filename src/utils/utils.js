@@ -172,3 +172,5 @@ export const sendMessageOnWhatsApp = (NumberAsE164, textToBeSend) => {
   const webUrl = buildWhatsAppLink(NumberAsE164, textToBeSend);
   window.open(webUrl, '_blank');
 };
+
+export const safeValue = (val) => (val ? val : '--');

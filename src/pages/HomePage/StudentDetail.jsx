@@ -14,8 +14,8 @@ import {
   LinearProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { formatDate, formatFileSize } from '../../utils/utils';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { defaultBoxPadding, formatDate, formatFileSize, safeValue } from '../../utils/utils';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { CloudDownloadOutlined, CloudUploadOutlined } from '@mui/icons-material';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -23,6 +23,7 @@ import { useSnackbar } from '../../components/customComponents/CustomNotificatio
 import { UploadDocuments } from './../Common/UploadDocuments';
 import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
 import { useFirebase } from '../../context/Firebase';
+import { DataGrid } from '@mui/x-data-grid';
 
 export default function StudentDetail({
   open,
@@ -37,6 +38,9 @@ export default function StudentDetail({
   const [uploading, setUploading] = useState(false);
   const [, setProgress] = useState({ done: 0, total: 0 });
   const [loading, setLoading] = useState(false);
+  const [payments, setPayments] = useState([]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymanetPageSize, setPaymentPageSize] = useState(100);
 
   const initials = (student.studentName || 'Student')
     .split(' ')
@@ -61,6 +65,24 @@ export default function StudentDetail({
     if (!parentStudent.id) return;
     fetchStudentDetail();
   }, [parentStudent.id, fetchStudentDetail]);
+
+  const fetchPaymentDetails = useCallback(async () => {
+    setPaymentLoading(true);
+    const response = await firebaseContext.getSubcollectionDocumentsByStudentId({
+      parentCollection: 'students',
+      studentId: parentStudent.id,
+      subcollectionName: 'monthlyBilling',
+    });
+    if (response?.docs) {
+      setPayments(response.docs);
+    }
+    setPaymentLoading(false);
+  }, [firebaseContext, parentStudent]);
+
+  useEffect(() => {
+    if (!parentStudent.id) return;
+    fetchPaymentDetails();
+  }, [parentStudent.id, fetchPaymentDetails]);
 
   const handleDownloadAll = async () => {
     if (!student?.documents?.length) return;
@@ -151,6 +173,10 @@ export default function StudentDetail({
 
   const info = [
     {
+      label: 'ID',
+      value: student?.humanId ? <span style={{ fontWeight: 'bold' }}>{student.humanId}</span> : '—',
+    },
+    {
       label: 'Student Name',
       value: student?.studentName ? (
         <span style={{ textTransform: 'capitalize' }}>{student.studentName}</span>
@@ -184,6 +210,75 @@ export default function StudentDetail({
     { label: 'Address', value: student.address || '—' },
   ];
 
+  const paymentColumns = useMemo(() => {
+    const cols = [
+      {
+        field: 'date_of_payment',
+        headerName: 'Date of Payment',
+        flex: 1,
+        renderCell: (params) => safeValue(params.row.paymentDate),
+      },
+      {
+        field: 'total_amount',
+        headerName: 'Total Amount',
+        flex: 1,
+        renderCell: (params) =>
+          Number(params.row.basicFee) + Number(params.row.seatFee) + Number(params.row.lockerFee),
+      },
+      {
+        field: 'payment_by',
+        headerName: 'Payment Method',
+        flex: 1,
+        renderCell: (params) => safeValue(params.row.paymentBy),
+      },
+    ];
+    return cols;
+  }, []);
+
+  const paymentSection = (
+    <Box sx={{ maxHeight: '500px', width: '100%' }}>
+      <DataGrid
+        rows={payments}
+        columns={paymentColumns}
+        pageSize={paymanetPageSize}
+        onPageSizeChange={(newSize) => setPaymentPageSize(newSize)}
+        pageSizeOptions={[25, 50, 100, 200, 500]}
+        pagination
+        disableColumnMenu
+        disableColumnSorting
+        disableSelectionOnClick
+        disableRowSelectionOnClick
+        disableVirtualization
+        density="comfortable"
+        rowHeight={60}
+        headerHeight={50}
+        style={{ height: '100%', width: '100%' }}
+        loading={paymentLoading}
+        sx={{
+          '& .MuiDataGrid-columnHeader, & .MuiDataGrid-scrollbarFiller': {
+            backgroundColor: '#f0f4ff !important',
+            color: '#4d4d4d !important',
+          },
+          '& .MuiDataGrid-columnHeaderTitle': {
+            fontWeight: 'bold !important',
+          },
+          '& .MuiDataGrid-cell:focus': {
+            outline: 'none !important',
+          },
+          '& .MuiDataGrid-cell:focus-within': {
+            outline: 'none !important',
+          },
+          '& .MuiDataGrid-columnHeader:focus': {
+            outline: 'none !important',
+          },
+          '& .MuiDataGrid-columnHeader:focus-within': {
+            outline: 'none !important',
+          },
+        }}
+      />
+    </Box>
+  );
+
   return (
     <Fragment>
       {openUploadDocumentSection && (
@@ -199,7 +294,7 @@ export default function StudentDetail({
         anchor="right"
         open={open}
         onClose={onClose}
-        PaperProps={{ sx: { width: { xs: '92%', sm: 480, md: 680 } } }}
+        PaperProps={{ sx: { width: { xs: '92%', sm: 480, md: 680, overflowY: 'hidden' } } }}
       >
         {loading ? (
           <LinearProgress />
@@ -323,6 +418,26 @@ export default function StudentDetail({
                     No documents uploaded
                   </Typography>
                 )}
+              </Box>
+
+              <Box sx={{ px: 1.5, py: 2, my: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mb: 1,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600, mb: 1 }}
+                  >
+                    Payment History
+                  </Typography>
+                </Box>
+                {paymentSection}
               </Box>
             </Box>
           </Box>
