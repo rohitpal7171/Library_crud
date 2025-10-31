@@ -138,7 +138,7 @@ export default function StudentDetail({
   const handleUploadAll = async (files) => {
     if (!files?.length)
       return showSnackbar({ severity: 'error', message: 'Please select files to upload!' });
-    let generatedDataId = student?.id;
+    let generatedDataId = parentStudent?.id;
     if (!generatedDataId)
       return showSnackbar({ severity: 'error', message: 'Error Generating Student ID!' });
     const uploadPromises = Array.from(files).map(async (file) => {
@@ -164,6 +164,7 @@ export default function StudentDetail({
         setOpenUploadDocumentSection(false);
       })
       .catch((err) => {
+        setUploading(false);
         showSnackbar({
           severity: 'error',
           message: err?.message ?? 'Error Uploading Documents!',
