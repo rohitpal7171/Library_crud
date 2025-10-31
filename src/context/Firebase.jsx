@@ -90,6 +90,35 @@ export const FirebaseProvider = (props) => {
     }
   }, []);
 
+  const editSubCollectionInFireStore = useCallback(
+    async (parentPath, subcollectionName, docId, data) => {
+      try {
+        // parentPath split into collection and doc id
+        const [parentCollection, parentId] = parentPath.split('/');
+        if (!parentCollection || !parentId || !docId) {
+          return { error: new Error('Invalid arguments') };
+        }
+
+        const docRef = doc(
+          firebaseCloudFirestore,
+          `${parentCollection}/${parentId}/${subcollectionName}/${docId}`
+        );
+
+        const modifiedData = {
+          ...data,
+          modifiedAt: serverTimestamp(),
+        };
+
+        await updateDoc(docRef, modifiedData);
+        return { id: docId };
+      } catch (err) {
+        console.error('updateDocumentInSubcollection error', err);
+        return { error: err };
+      }
+    },
+    []
+  );
+
   // cloud Database - to add document with data in collection
   const createDataInFireStore = useCallback(
     async (collectionName = 'students', data) => {
@@ -641,6 +670,7 @@ export const FirebaseProvider = (props) => {
     deleteDocumentById,
     getSubcollectionDocumentsByStudentId,
     getCollectionWithSubcollections,
+    editSubCollectionInFireStore,
 
     // Realtime DB generics
     putDataInRealtimeDatabase,

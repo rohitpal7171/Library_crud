@@ -1,3 +1,4 @@
+import { Edit } from '@mui/icons-material';
 import {
   Timeline,
   TimelineItem,
@@ -7,7 +8,7 @@ import {
   TimelineDot,
   TimelineOppositeContent,
 } from '@mui/lab';
-import { Typography } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 
 const PALETTE_KEYS = [
   'inherit',
@@ -20,7 +21,12 @@ const PALETTE_KEYS = [
   'error',
 ];
 
-const CustomDynamicTimeline = ({ events = [], position = 'right', showTimeOnLeft = false }) => {
+const CustomDynamicTimeline = ({
+  events = [],
+  position = 'right',
+  showTimeOnLeft = false,
+  onEditClick,
+}) => {
   return (
     <Timeline
       position={position}
@@ -70,9 +76,16 @@ const CustomDynamicTimeline = ({ events = [], position = 'right', showTimeOnLeft
 
           {/* Content */}
           <TimelineContent sx={{ py: '12px', px: 2 }}>
-            <Typography variant="h6" component="span">
-              {event.title}
-            </Typography>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+            >
+              <Typography variant="h6" component="span">
+                {event.title}
+              </Typography>
+              <IconButton color="primary" onClick={() => onEditClick?.(event)}>
+                <Edit />
+              </IconButton>
+            </Box>
             <Typography>{event.description}</Typography>
           </TimelineContent>
         </TimelineItem>

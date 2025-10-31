@@ -150,8 +150,22 @@ export default function StudentDetail({
   };
 
   const info = [
-    { label: 'Student Name', value: student.studentName || '—' },
-    { label: 'Father Name', value: student.fatherName || '—' },
+    {
+      label: 'Student Name',
+      value: student?.studentName ? (
+        <span style={{ textTransform: 'capitalize' }}>{student.studentName}</span>
+      ) : (
+        '—'
+      ),
+    },
+    {
+      label: 'Father Name',
+      value: student?.fatherName ? (
+        <span style={{ textTransform: 'capitalize' }}>{student.fatherName}</span>
+      ) : (
+        '—'
+      ),
+    },
     { label: 'Date of Birth', value: formatDate(student.dateOfBirth) },
     { label: 'Date of Joining', value: formatDate(student.dateOfJoining) },
     { label: 'Gender', value: student.gender || '—' },
@@ -204,7 +218,9 @@ export default function StudentDetail({
                   {initials}
                 </Avatar>
                 <Box>
-                  <Typography variant="h6">{student.studentName || 'Unnamed Student'}</Typography>
+                  <Typography variant="h6" style={{ textTransform: 'capitalize' }}>
+                    {student.studentName || 'Unnamed Student'}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {student.studentProfile || 'No profile description provided.'}
                   </Typography>

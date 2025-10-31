@@ -6,10 +6,7 @@ import {
   Drawer,
   Grid,
   IconButton,
-  InputAdornment,
   LinearProgress,
-  ListItem,
-  ListItemText,
   MenuItem,
   Stack,
   TextField,
@@ -42,6 +39,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
 
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
   const subType = watch('subscriptionType');
   const subDuration = watch('subscriptionDuration');
@@ -106,6 +104,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
 
   const getPaymentStatusList = useCallback(() => {
     return payments.map((payment) => ({
+      ...payment,
       title: formatFirebaseTimestamp(payment.createdAt),
       description: renderDescription([
         { label: 'Subscription Type', value: payment?.subscriptionType ?? 'month' },
@@ -133,28 +132,85 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
     }));
   }, [payments]);
 
+  const handleClickCancel = () => {
+    reset({
+      ...defaultMonthlyPaymentSchema,
+      paymentDate: '',
+    });
+    setSelectedPayment(null);
+  };
+
   const submit = async (values) => {
     const monthlyBilling = {
       ...values,
       nextPaymentDate: nextDue,
     };
     setLoading(true);
-    await firebaseContext
-      .makeSubCollectionInFireStore(`students/${student.id}`, 'monthlyBilling', {
-        ...monthlyBilling,
-        studentId: student.id,
-      })
-      .then(() => {
-        setLoading(false);
-        showSnackbar({ severity: 'success', message: 'Payment Added Successfully!' });
-        fetchPaymentDetails();
-        fetchStudentData?.(serverFilters);
-        reset();
-      })
-      .catch((err) => {
-        setLoading(false);
-        showSnackbar({ severity: 'error', message: err.message || 'Failed to add payment' });
-      });
+    if (selectedPayment?.id) {
+      await firebaseContext
+        .editSubCollectionInFireStore(
+          `students/${student.id}`,
+          'monthlyBilling',
+          selectedPayment.id,
+          {
+            ...values,
+          }
+        )
+        .then(() => {
+          setLoading(false);
+          showSnackbar({ severity: 'success', message: 'Payment Edit Successfully!' });
+          fetchPaymentDetails();
+          fetchStudentData?.(serverFilters);
+          handleClickCancel();
+        })
+        .catch((err) => {
+          setLoading(false);
+          showSnackbar({ severity: 'error', message: err.message || 'Failed to edit payment' });
+        });
+    } else {
+      // add form
+      await firebaseContext
+        .makeSubCollectionInFireStore(`students/${student.id}`, 'monthlyBilling', {
+          ...monthlyBilling,
+          studentId: student.id,
+        })
+        .then(() => {
+          setLoading(false);
+          showSnackbar({ severity: 'success', message: 'Payment Added Successfully!' });
+          fetchPaymentDetails();
+          fetchStudentData?.(serverFilters);
+          reset();
+        })
+        .catch((err) => {
+          setLoading(false);
+          showSnackbar({ severity: 'error', message: err.message || 'Failed to add payment' });
+        });
+    }
+  };
+
+  const handlePaymentReminder = () => {
+    const number = student?.phoneNumber ?? student?.phoneNumber2;
+    if (number) {
+      const text = `Hi, Sweet Payment Reminder from Shivaay Library & Co-working for date: ${formatFirebaseTimestamp(
+        payments[0].nextPaymentDate
+      )}`;
+      sendMessageOnWhatsApp(number, text);
+    } else {
+      showSnackbar({ severity: 'error', message: 'Phone Number not found.' });
+    }
+  };
+
+  const openEditForm = (payment) => {
+    setSelectedPayment(payment);
+    reset({
+      subscriptionType: payment?.subscriptionType ?? 'month',
+      subscriptionDuration: payment?.subscriptionDuration ?? 1,
+      paymentBy: payment?.paymentBy ?? 'CASH',
+      paymentDate: payment?.paymentDate,
+      basicFee: payment?.basicFee ?? 0,
+      seatFee: payment?.seatFee ?? 0,
+      lockerFee: payment?.lockerFee ?? 0,
+    });
   };
 
   const addPaymentSection = (
@@ -316,26 +372,26 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               : 'Note: Next payment date will appear after selecting type, duration, and Payment Date.'}
           </Grid>
           <Grid item size={24} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            {selectedPayment?.id ? (
+              <CustomButton
+                variant="contained"
+                disabled={loading}
+                loading={loading}
+                colorType={'danger'}
+                onClick={() => handleClickCancel()}
+              >
+                {loading ? 'Loading...' : 'Cancel'}
+              </CustomButton>
+            ) : null}
+            &nbsp;
             <CustomButton type="submit" variant="contained" disabled={loading} loading={loading}>
-              {loading ? 'Loading...' : 'Add Payment'}
+              {loading ? 'Loading...' : selectedPayment?.id ? 'Edit Payment' : 'Add Payment'}
             </CustomButton>
           </Grid>
         </Grid>
       </form>
     </Box>
   );
-
-  const handlePaymentReminder = () => {
-    const number = student?.phoneNumber ?? student?.phoneNumber2;
-    if (number) {
-      const text = `Hi, Sweet Payment Reminder from Shivaay Library & Co-working for date: ${formatFirebaseTimestamp(
-        payments[0].nextPaymentDate
-      )}`;
-      sendMessageOnWhatsApp(number, text);
-    } else {
-      showSnackbar({ severity: 'error', message: 'Phone Number not found.' });
-    }
-  };
 
   return (
     <Fragment>
@@ -353,7 +409,11 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             <Stack direction="row" spacing={2} alignItems="center">
               <Box>
                 <Typography variant="h6">{'Payment Details'}</Typography>
-                <Typography variant="title1" color="text.primary" sx={{ pl: 1 }}>
+                <Typography
+                  variant="title1"
+                  color="text.primary"
+                  sx={{ pl: 1, textTransform: 'capitalize', fontWeight: 'bold' }}
+                >
                   {student.studentName || 'Unknown Student.'}
                 </Typography>
               </Box>
@@ -385,7 +445,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             {loading ? (
               <LinearProgress sx={{ my: 2 }} />
             ) : (
-              <CustomDynamicTimeline events={getPaymentStatusList()} />
+              <CustomDynamicTimeline events={getPaymentStatusList()} onEditClick={openEditForm} />
             )}
           </Box>
           {/* Payment History Ends  */}

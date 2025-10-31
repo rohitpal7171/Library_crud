@@ -192,6 +192,7 @@ export default function StudentList(props) {
                       color: 'primary.main',
                       cursor: 'pointer',
                       textDecoration: 'none',
+                      textTransform: 'capitalize',
                       '&:hover': {
                         textDecoration: 'underline',
                       },
@@ -200,34 +201,38 @@ export default function StudentList(props) {
                     {safeValue(params.value)}
                   </Typography>
                 </Tooltip>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <PhoneIcon sx={{ fontSize: 15, color: '#4CAF50' }} />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {safeValue(params.row.phoneNumber)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <PhoneIcon sx={{ fontSize: 15, color: '#4c7fafff' }} />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {safeValue(params.row.phoneNumber2)}
-                  </Typography>
-                </Box>
+                {params?.row?.phoneNumber ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <PhoneIcon sx={{ fontSize: 15, color: '#4CAF50' }} />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {safeValue(params.row.phoneNumber)}
+                    </Typography>
+                  </Box>
+                ) : null}
+                {params?.row?.phoneNumber2 ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <PhoneIcon sx={{ fontSize: 15, color: '#4c7fafff' }} />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {safeValue(params.row.phoneNumber2)}
+                    </Typography>
+                  </Box>
+                ) : null}
               </Box>
             </Box>
           );

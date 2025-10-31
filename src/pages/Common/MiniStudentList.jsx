@@ -67,7 +67,13 @@ export default function MiniStudentList({
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={student.studentName || 'Unnamed Student'}
+                  primary={
+                    student?.studentName ? (
+                      <span style={{ textTransform: 'capitalize' }}>{student.studentName}</span>
+                    ) : (
+                      'Unnamed Student'
+                    )
+                  }
                   secondary={student.phoneNumber || 'No phone number'}
                 />
               </ListItem>
