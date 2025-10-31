@@ -14,7 +14,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { defaultBoxPadding, formatDate, formatFileSize, safeValue } from '../../utils/utils';
+import { formatDate, formatFileSize, safeValue } from '../../utils/utils';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { CloudDownloadOutlined, CloudUploadOutlined } from '@mui/icons-material';
 import JSZip from 'jszip';
