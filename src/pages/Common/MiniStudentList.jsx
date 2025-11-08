@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import { Skeleton } from '@mui/material';
 import { Empty } from 'antd';
-import { defaultBoxBorderRadius } from '../../utils/utils';
+import { defaultBoxBorderRadius, getDueDateDisplay } from '../../utils/utils';
 
 export default function MiniStudentList({
   students = [],
@@ -44,6 +44,10 @@ export default function MiniStudentList({
             .join('')
             .slice(0, 2)
             .toUpperCase();
+
+          const { text, fontWeight } = getDueDateDisplay(
+            student?.monthlyBillingLatest?.nextPaymentDate
+          );
           return (
             <React.Fragment key={student.id}>
               <ListItem
@@ -54,10 +58,13 @@ export default function MiniStudentList({
                     <Typography
                       color={amountTextColor}
                       fontWeight={400}
-                      sx={{ cursor: 'pointer', mt: 2, textDecoration: 'underline' }}
+                      sx={{ cursor: 'pointer', textDecoration: 'underline' }}
                       onClick={() => handlePaymentClick?.(student)}
                     >
                       ₹{student.due_amount || 0}
+                    </Typography>
+                    <Typography color={'textSecondary'} fontWeight={fontWeight}>
+                      {text}
                     </Typography>
                   </Box>
                 }

@@ -396,11 +396,22 @@ export const FirebaseProvider = (props) => {
         const snapshot = await getDocs(parentQuery);
 
         // Map base docs
-        const baseDocs = snapshot.docs.map((docSnap) => ({
+        let baseDocs = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           _ref: docSnap.ref,
           ...docSnap.data(),
         }));
+
+        // Enrich with latest monthlyBilling doc
+        const enriched = await Promise.allSettled(
+          baseDocs.map(async (d) => {
+            const latestBilling = await getLatestMonthlyBilling(d.id, collectionName);
+            return { ...d, monthlyBillingLatest: latestBilling };
+          })
+        );
+        baseDocs = enriched.map((res, i) =>
+          res.status === 'fulfilled' ? res.value : { ...baseDocs[i], monthlyBillingLatest: null }
+        );
 
         if (!subcollections.length) {
           return { data: baseDocs.map(({ _ref, ...rest }) => rest) };

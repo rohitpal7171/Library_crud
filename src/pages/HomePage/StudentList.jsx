@@ -315,8 +315,8 @@ export default function StudentList(props) {
                 lineHeight: 2,
               }}
             >
-              <span>Seat: {seat}</span>
-              <span>Locker: {locker}</span>
+              {p.row.seatReserved ? <span>Seat: {seat}</span> : null}
+              {p.row.locker ? <span>Locker: {locker}</span> : null}
             </Box>
           );
         },

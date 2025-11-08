@@ -201,11 +201,15 @@ export default function StudentDetail({
     { label: 'Timings', value: student.timings || '—' },
     {
       label: 'Seat',
-      value: student.seatReserved ? `Reserved • #${student.seatNumber || '—'}` : 'Not reserved',
+      value: student.seatReserved
+        ? `Reserved ${student.seatNumber ? `• #${student.seatNumber}` : ''}`
+        : 'Not reserved',
     },
     {
       label: 'Locker',
-      value: student.locker ? `Assigned • #${student.lockerNumber || '—'}` : 'No locker',
+      value: student.locker
+        ? `Assigned ${student.lockerNumber ? `• #${student.lockerNumber}` : ''}`
+        : 'No locker',
     },
     { label: 'Folder Id', value: student.id || '—' },
     { label: 'Address', value: student.address || '—' },

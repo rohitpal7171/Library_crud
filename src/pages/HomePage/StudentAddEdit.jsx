@@ -303,15 +303,27 @@ const StudentAddEdit = ({
               <Controller
                 name="gender"
                 control={control}
-                render={({ field }) => (
-                  <RadioGroup row {...field}>
-                    <FormControlLabel value="Male" control={<Radio size="small" />} label="Male" />
-                    <FormControlLabel
-                      value="Female"
-                      control={<Radio size="small" />}
-                      label="Female"
-                    />
-                  </RadioGroup>
+                rules={{ required: 'Please select your gender' }}
+                render={({ field, fieldState: { error } }) => (
+                  <>
+                    <RadioGroup row {...field}>
+                      <FormControlLabel
+                        value="Male"
+                        control={<Radio size="small" />}
+                        label="Male"
+                      />
+                      <FormControlLabel
+                        value="Female"
+                        control={<Radio size="small" />}
+                        label="Female"
+                      />
+                    </RadioGroup>
+                    {error && (
+                      <Typography variant="caption" color="error">
+                        {error.message}
+                      </Typography>
+                    )}
+                  </>
                 )}
               />
             </Grid>
@@ -597,16 +609,30 @@ const StudentAddEdit = ({
                   <Controller
                     name="monthlyBilling.paymentBy"
                     control={control}
-                    render={({ field }) => (
+                    rules={{ required: 'Please select a payment method' }}
+                    render={({ field, fieldState: { error } }) => (
                       <TextField
                         {...field}
                         select
                         fullWidth
                         size="small"
-                        placeholder="Select type"
-                        error={!!errors?.monthlyBilling?.paymentBy}
-                        helperText={errors?.monthlyBilling?.paymentBy?.message || ''}
+                        // placeholder="Select type"
+                        value={field.value} // ensures it's empty by default
+                        error={!!error}
+                        helperText={error ? error.message : ''}
+                        SelectProps={{
+                          displayEmpty: true,
+                          renderValue: (selected) => {
+                            // show "Select type" when empty
+                            if (!selected) {
+                              return <>Select type</>;
+                            }
+                            // optionally map value to label (if you prefer label text instead of raw value)
+                            return selected;
+                          },
+                        }}
                       >
+                        {/* <MenuItem value="">Select type</MenuItem> optional default option */}
                         <MenuItem value="CASH">Cash</MenuItem>
                         <MenuItem value="ONLINE">Online</MenuItem>
                       </TextField>

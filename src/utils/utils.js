@@ -10,7 +10,8 @@ export const defaultMonthlyPaymentSchema = {
   basicFee: 0,
   lockerFee: 0,
   seatFee: 0,
-  paymentBy: 'CASH',
+  // paymentBy: 'CASH',
+  paymentBy: '',
 };
 
 export const defaultSchemaValues = {
@@ -18,7 +19,8 @@ export const defaultSchemaValues = {
   fatherName: '',
   dateOfBirth: '',
   dateOfJoining: '',
-  gender: 'Male',
+  // gender: 'Male',
+  gender: '',
   phoneNumber: '',
   phoneNumber2: '',
   referredBy: '',
