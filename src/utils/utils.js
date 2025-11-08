@@ -1,3 +1,6 @@
+import { PictureAsPdf } from '@mui/icons-material';
+import { Avatar } from '@mui/material';
+
 export const defaultBoxPadding = '20px';
 export const defaultBorderColor = '#d9d9d9';
 export const labelSx = { fontSize: 13, fontWeight: 600, mb: 0.5 };
@@ -178,3 +181,7 @@ export const sendMessageOnWhatsApp = (NumberAsE164, textToBeSend) => {
 };
 
 export const safeValue = (val) => (val ? val : '--');
+
+export const showSubscriptionType = (type) => {
+  return type === 'month' ? 'Monthly' : 'Yearly';
+};

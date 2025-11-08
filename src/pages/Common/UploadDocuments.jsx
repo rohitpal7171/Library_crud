@@ -20,7 +20,7 @@ export const UploadDocuments = ({
     name: 'files',
     multiple: true,
     fileList,
-    accept: 'image/*',
+    accept: 'image/*,application/pdf',
     listType: 'picture',
     beforeUpload: (file) => {
       const isImage = file.type.startsWith('image/');
@@ -85,7 +85,7 @@ export const UploadDocuments = ({
             </p>
             <p className="ant-upload-text">Click or drag image files to this area to upload</p>
             <p className="ant-upload-hint">
-              You can upload up to 5 images (JPG, PNG, etc.) — Max size 5MB each.
+              You can upload up to 5 images (JPG, PNG, PDF, etc.) — Max size 5MB each.
             </p>
           </Dragger>
         </Box>

@@ -24,6 +24,7 @@ import { UploadDocuments } from './../Common/UploadDocuments';
 import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
 import { useFirebase } from '../../context/Firebase';
 import { DataGrid } from '@mui/x-data-grid';
+import GetDocumentIcon from '../Common/GetDocumentIcon';
 
 export default function StudentDetail({
   open,
@@ -285,6 +286,7 @@ export default function StudentDetail({
     </Box>
   );
 
+  console.log('student?.documents', student?.documents);
   return (
     <Fragment>
       {openUploadDocumentSection && (
@@ -409,9 +411,7 @@ export default function StudentDetail({
                   <List dense={true}>
                     {student?.documents?.map((doc, index) => (
                       <ListItem key={index}>
-                        <ListItemAvatar>
-                          <Avatar src={doc?.url ?? ''} />
-                        </ListItemAvatar>
+                        <ListItemAvatar>{GetDocumentIcon(doc)}</ListItemAvatar>
                         <ListItemText
                           primary={doc?.originalName ?? 'Unknown Document'}
                           secondary={formatFileSize(doc?.size)}

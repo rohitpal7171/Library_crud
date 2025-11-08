@@ -22,6 +22,7 @@ import {
   formatFirebaseTimestamp,
   labelSx,
   sendMessageOnWhatsApp,
+  showSubscriptionType,
 } from '../../utils/utils';
 import { useForm, Controller } from 'react-hook-form';
 import CustomButton from '../../components/customComponents/CustomButton';
@@ -107,7 +108,14 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
       ...payment,
       title: formatFirebaseTimestamp(payment.createdAt),
       description: renderDescription([
-        { label: 'Subscription Type', value: payment?.subscriptionType ?? 'month' },
+        {
+          label: 'Subscription Type',
+          value: showSubscriptionType(payment?.subscriptionType) ?? 'month',
+        },
+        {
+          label: 'Payment Date',
+          value: payment?.paymentDate ? formatDate(payment.paymentDate) : 'N/A',
+        },
         { label: 'Subscription Duration', value: payment?.subscriptionDuration ?? '1' },
         { label: 'Basic Fees', value: payment?.basicFee ?? 0 },
         { label: 'Locker Reservation Fee', value: payment?.lockerFee ?? 0 },

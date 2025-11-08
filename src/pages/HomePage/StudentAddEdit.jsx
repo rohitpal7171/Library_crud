@@ -716,8 +716,7 @@ const StudentAddEdit = ({
                     id="doc-upload"
                     type="file"
                     multiple
-                    // accept="image/*,application/pdf"
-                    accept="image/*"
+                    accept="image/*,application/pdf"
                     style={{ display: 'none' }}
                     onChange={handleFilesPicked}
                   />

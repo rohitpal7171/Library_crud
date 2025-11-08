@@ -405,11 +405,6 @@ const Dashboard = () => {
     setSelectedStudent(null);
   };
 
-  console.log(
-    'billing.dueAmount(activeStudents).list_of_student',
-    billing.dueAmount(activeStudents).list_of_student
-  );
-
   return (
     <Fragment>
       {openPaymentDetail && (
