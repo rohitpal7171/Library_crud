@@ -17,6 +17,7 @@ import { Close, ThumbUpAltOutlined, WhatsApp } from '@mui/icons-material';
 import CustomDynamicTimeline from '../../components/customComponents/CustomDynamicTimeline';
 import {
   computeNextPaymentDate,
+  dateToString,
   defaultMonthlyPaymentSchema,
   formatDate,
   formatFirebaseTimestamp,
@@ -30,7 +31,7 @@ import CustomButton from '../../components/customComponents/CustomButton';
 export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, serverFilters }) => {
   const firebaseContext = useFirebase();
   const { showSnackbar } = useSnackbar();
-  const { control, handleSubmit, reset, watch, formState } = useForm({
+  const { control, handleSubmit, reset, watch, formState, setValue } = useForm({
     defaultValues: {
       ...defaultMonthlyPaymentSchema,
       paymentDate: '',
@@ -41,13 +42,12 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [skipNextPaymentDateUpdate, setSkipNextPaymentDateUpdate] = useState(false);
 
   const subType = watch('subscriptionType');
   const subDuration = watch('subscriptionDuration');
   const paymentDate = watch('paymentDate');
-
-  const startDate = paymentDate ? new Date(paymentDate) : null;
-  const nextDue = computeNextPaymentDate(startDate, subType, subDuration);
+  const nextPaymentDate = watch('nextPaymentDate');
 
   const fetchPaymentDetails = useCallback(async () => {
     setLoading(true);
@@ -66,6 +66,16 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
     if (!student.id) return;
     fetchPaymentDetails();
   }, [student.id, fetchPaymentDetails]);
+
+  useEffect(() => {
+    if (skipNextPaymentDateUpdate) return;
+    if (!paymentDate) return;
+    const startDate = paymentDate ? new Date(paymentDate) : null;
+    const nextDue = computeNextPaymentDate(startDate, subType, subDuration);
+    const nextDueInString = nextDue ? dateToString(nextDue) : '';
+    if (!nextDueInString) return;
+    setValue('nextPaymentDate', nextDueInString);
+  }, [setValue, selectedPayment, paymentDate, subType, subDuration, skipNextPaymentDateUpdate]);
 
   const renderDescription = (fields = []) => (
     <Fragment>
@@ -151,7 +161,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
   const submit = async (values) => {
     const monthlyBilling = {
       ...values,
-      nextPaymentDate: nextDue,
+      nextPaymentDate: nextPaymentDate,
     };
     setLoading(true);
     if (selectedPayment?.id) {
@@ -210,10 +220,12 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
 
   const openEditForm = (payment) => {
     setSelectedPayment(payment);
+    setSkipNextPaymentDateUpdate(true);
     reset({
       subscriptionType: payment?.subscriptionType ?? 'month',
       subscriptionDuration: payment?.subscriptionDuration ?? 1,
       paymentBy: payment?.paymentBy ?? 'CASH',
+      nextPaymentDate: payment?.nextPaymentDate,
       paymentDate: payment?.paymentDate,
       basicFee: payment?.basicFee ?? 0,
       seatFee: payment?.seatFee ?? 0,
@@ -225,7 +237,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
     <Box sx={{ mt: 2 }}>
       <form onSubmit={handleSubmit(submit)} noValidate>
         <Grid container size={24} spacing={2}>
-          <Grid item size={{ xs: 6, sm: 3 }}>
+          <Grid item size={{ xs: 6, sm: 4 }}>
             <Typography sx={labelSx}>Subscription Type</Typography>
             <Controller
               name="subscriptionType"
@@ -247,7 +259,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 6, sm: 3 }}>
+          <Grid item size={{ xs: 6, sm: 4 }}>
             <Typography sx={labelSx}>Subscription Duration</Typography>
             <Controller
               name="subscriptionDuration"
@@ -280,7 +292,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 6, sm: 6 }}>
+          <Grid item size={{ xs: 6, sm: 4 }}>
             <Typography sx={labelSx}>Payment Method</Typography>
             <Controller
               name="paymentBy"
@@ -315,25 +327,8 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 6, sm: 6 }}>
-            <Typography sx={labelSx}>Payment Date</Typography>
-            <Controller
-              name="paymentDate"
-              control={control}
-              rules={{ required: 'Payment date required' }}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  type="date"
-                  fullWidth
-                  size="small"
-                  error={!!errors.paymentDate}
-                  helperText={errors.paymentDate?.message || ''}
-                />
-              )}
-            />
-          </Grid>
-          <Grid item size={{ xs: 6, sm: 6 }}>
+
+          <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
             <Typography sx={labelSx}>Basic Fee</Typography>
             <Controller
               name="basicFee"
@@ -354,7 +349,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 6, sm: 6 }}>
+          <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
             <Typography sx={labelSx}>Seat Reservation Fee</Typography>
             <Controller
               name="seatFee"
@@ -371,7 +366,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
-          <Grid item size={{ xs: 12, sm: 6 }}>
+          <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
             <Typography sx={labelSx}>Locker Reservation Fee</Typography>
             <Controller
               name="lockerFee"
@@ -388,9 +383,45 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
               )}
             />
           </Grid>
+          <Grid item size={{ xs: 6, sm: 6 }}>
+            <Typography sx={labelSx}>Payment Date</Typography>
+            <Controller
+              name="paymentDate"
+              control={control}
+              rules={{ required: 'Payment date required' }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  type="date"
+                  fullWidth
+                  size="small"
+                  error={!!errors.paymentDate}
+                  helperText={errors.paymentDate?.message || ''}
+                />
+              )}
+            />
+          </Grid>
+          <Grid item size={{ xs: 6, sm: 6 }}>
+            <Typography sx={{ ...labelSx, color: 'red' }}>Next Payment Date</Typography>
+            <Controller
+              name="nextPaymentDate"
+              control={control}
+              rules={{ required: 'Next payment date required' }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  type="date"
+                  fullWidth
+                  size="small"
+                  error={!!errors.nextPaymentDate}
+                  helperText={errors.nextPaymentDate?.message || ''}
+                />
+              )}
+            />
+          </Grid>
           <Grid item size={24} sx={{ color: 'red' }}>
-            {nextDue
-              ? `Note: Next payment will be due on ${formatDate(nextDue)}.`
+            {nextPaymentDate
+              ? `Note: Next payment will be due on ${formatDate(nextPaymentDate)}.`
               : 'Note: Next payment date will appear after selecting type, duration, and Payment Date.'}
           </Grid>
           <Grid item size={24} sx={{ display: 'flex', justifyContent: 'flex-end' }}>

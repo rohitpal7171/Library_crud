@@ -88,6 +88,11 @@ const Dashboard = () => {
     const withSeats = students.filter((s) => s.seatReserved)?.length ?? 0;
     const withLockers = students.filter((s) => s.locker)?.length ?? 0;
 
+    // ✅ Students with no documents
+    const studentsWithNoDocuments = students.filter(
+      (s) => !s.documents || s.documents.length === 0
+    ).length;
+
     const genderCount = students.reduce((acc, s) => {
       acc[s.gender] = (acc[s.gender] || 0) + 1;
       return acc;
@@ -113,6 +118,7 @@ const Dashboard = () => {
       withLockers,
       genderCount,
       monthlyJoining,
+      studentsWithNoDocuments,
     };
   }, [students, activeStudents]);
 
@@ -588,9 +594,9 @@ const Dashboard = () => {
               </Grid>
               <Grid item sx={{ width: '100%' }}>
                 <StatCard
-                  title="Students with Documents"
-                  count={stats?.totalDocuments ?? 0}
-                  tooltipHtml="Number of Students have Documents attached."
+                  title="Documents Attached"
+                  count={`${stats?.totalDocuments ?? 0} / ${stats?.total ? stats.total * 5 : 0}`}
+                  tooltipHtml="Number of Documents attached."
                   loading={loading}
                   grid={{ xs: 12, sm: 12, md: 12 }}
                 />
@@ -598,7 +604,7 @@ const Dashboard = () => {
               <Grid item sx={{ width: '100%' }}>
                 <StatCard
                   title="Students without Documents"
-                  count={stats?.missingDocuments ?? 0}
+                  count={stats?.studentsWithNoDocuments ?? 0}
                   tooltipHtml="Number of Students don't have Documents attached."
                   loading={loading}
                   iconColor="error"

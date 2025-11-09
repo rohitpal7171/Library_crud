@@ -1,6 +1,3 @@
-import { PictureAsPdf } from '@mui/icons-material';
-import { Avatar } from '@mui/material';
-
 export const defaultBoxPadding = '20px';
 export const defaultBorderColor = '#d9d9d9';
 export const labelSx = { fontSize: 13, fontWeight: 600, mb: 0.5 };
@@ -13,8 +10,9 @@ export const defaultMonthlyPaymentSchema = {
   basicFee: 0,
   lockerFee: 0,
   seatFee: 0,
-  // paymentBy: 'CASH',
   paymentBy: '',
+  nextPaymentDate: '',
+  paymentDate: '',
 };
 
 export const defaultSchemaValues = {
@@ -22,7 +20,6 @@ export const defaultSchemaValues = {
   fatherName: '',
   dateOfBirth: '',
   dateOfJoining: '',
-  // gender: 'Male',
   gender: '',
   phoneNumber: '',
   phoneNumber2: '',
@@ -184,4 +181,16 @@ export const safeValue = (val) => (val ? val : '--');
 
 export const showSubscriptionType = (type) => {
   return type === 'month' ? 'Monthly' : 'Yearly';
+};
+
+export const dateToString = (d) => {
+  try {
+    if (!d) return '';
+    const dateObj = d instanceof Date ? d : new Date(d);
+    const local = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  } catch (err) {
+    console.log('error while formatting date', err);
+    return '';
+  }
 };

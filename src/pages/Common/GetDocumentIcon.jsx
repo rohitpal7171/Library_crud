@@ -8,8 +8,6 @@ const GetDocumentIcon = (document) => {
 
   const { mimeType = '', url } = document;
 
-  console.log('document', document);
-
   if (mimeType.startsWith('image/')) {
     return <Avatar src={url ?? ''} />;
   }

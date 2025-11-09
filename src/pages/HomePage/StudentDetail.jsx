@@ -286,7 +286,6 @@ export default function StudentDetail({
     </Box>
   );
 
-  console.log('student?.documents', student?.documents);
   return (
     <Fragment>
       {openUploadDocumentSection && (
