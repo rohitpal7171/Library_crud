@@ -210,6 +210,9 @@ const Dashboard = () => {
             due_amount,
           });
 
+          // 🔽 Sort by latest date first
+          list_of_student.sort((a, b) => b.due_date - a.due_date);
+
           total_due_amount += due_amount;
         }
       }
@@ -259,6 +262,9 @@ const Dashboard = () => {
             due_amount,
             due_date: dueDateOnly, // optional: handy for sorting/display
           });
+
+          // 🔽 Sort latest first (descending order)
+          list_of_student.sort((a, b) => b.due_date - a.due_date);
 
           total_due_amount += due_amount;
         }
