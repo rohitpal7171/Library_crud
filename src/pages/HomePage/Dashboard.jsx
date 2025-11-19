@@ -137,7 +137,7 @@ const Dashboard = () => {
     'Dec',
   ];
   const monthlyData = monthOrder
-    .map((month) => ({ month, count: stats.monthlyJoining[month] || 0 }))
+    .map((month) => ({ month, count: stats.monthlyJoining[month] || 0, barLabel: month }))
     .filter((item) => item.count > 0);
 
   const valueFormatter = (value) => {
@@ -392,7 +392,16 @@ const Dashboard = () => {
   }, [students]);
 
   const chartSetting = {
-    xAxis: [{ dataKey: 'month', tickPlacement: 'middle', tickLabelPlacement: 'middle' }],
+    xAxis: [
+      {
+        dataKey: 'month',
+        scale: 'band',
+        interval: 0,
+        tickPlacement: 'middle',
+        tickLabelPlacement: 'middle',
+        padding: { left: 0.12, right: 0.12 },
+      },
+    ],
     yAxis: [
       {
         label: 'Number of Students',
@@ -401,7 +410,8 @@ const Dashboard = () => {
     ],
     series: [{ dataKey: 'count', label: 'Student Enrolled', valueFormatter }],
     height: 290,
-    margin: { left: 0 },
+    // margin: { left: 0 },
+    margin: { left: 28, right: 14, top: 10, bottom: 36 },
   };
 
   const handlePaymentClick = useCallback(
