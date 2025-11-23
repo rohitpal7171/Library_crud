@@ -142,6 +142,7 @@ export default function StudentList(props) {
             severity: 'success',
             message: 'Student Active Status Updated Successfully!',
           });
+          closeMenu?.();
           fetchStudentData(serverFilters);
         }
       } catch (err) {
@@ -150,7 +151,7 @@ export default function StudentList(props) {
         console.log(err);
       }
     },
-    [firebaseContext, fetchStudentData, setLoading, showSnackbar, serverFilters]
+    [closeMenu, firebaseContext, fetchStudentData, setLoading, showSnackbar, serverFilters]
   );
 
   const columns = useMemo(() => {
@@ -269,29 +270,26 @@ export default function StudentList(props) {
             </Box>
           ),
         });
+        cols.push({
+          field: 'gender',
+          headerName: 'Gender',
+          width: 80,
+          flex: 0.6,
+          renderCell: (p) =>
+            p.value ? (
+              <Box sx={{ display: 'flex', marginTop: '20px', gap: 1 }}>
+                {p.value === 'Male' ? (
+                  <MaleIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                ) : (
+                  <FemaleIcon sx={{ color: 'error.main', fontSize: 18 }} />
+                )}
+                <Typography sx={{ fontWeight: 400 }}>{p.value}</Typography>
+              </Box>
+            ) : (
+              '--'
+            ),
+        });
       }
-
-    if (!isXs) {
-      cols.push({
-        field: 'gender',
-        headerName: 'Gender',
-        width: 80,
-        flex: 0.6,
-        renderCell: (p) =>
-          p.value ? (
-            <Box sx={{ display: 'flex', marginTop: '20px', gap: 1 }}>
-              {p.value === 'Male' ? (
-                <MaleIcon sx={{ color: 'primary.main', fontSize: 18 }} />
-              ) : (
-                <FemaleIcon sx={{ color: 'error.main', fontSize: 18 }} />
-              )}
-              <Typography sx={{ fontWeight: 400 }}>{p.value}</Typography>
-            </Box>
-          ) : (
-            '--'
-          ),
-      });
-    }
 
     if (!isXs)
       cols.push({
@@ -350,28 +348,29 @@ export default function StudentList(props) {
           );
         },
       });
-      cols.push({
-        field: 'monthlyBillingLatest.nextPaymentDate',
-        headerName: 'Due Date',
-        flex: 0.8,
-        width: 80,
-        renderCell: (p) => {
-          const { text, color, fontWeight } = getDueDateDisplay(
-            p.row?.monthlyBillingLatest?.nextPaymentDate
-          );
-          return (
-            <Typography
-              color={color}
-              fontWeight={fontWeight}
-              sx={{ cursor: 'pointer', mt: 2, textDecoration: 'underline' }}
-              onClick={() => handlePaymentDueClick(p.row)}
-            >
-              {text}
-            </Typography>
-          );
-        },
-      });
     }
+
+    cols.push({
+      field: 'monthlyBillingLatest.nextPaymentDate',
+      headerName: 'Due Date',
+      flex: 0.8,
+      width: 80,
+      renderCell: (p) => {
+        const { text, color, fontWeight } = getDueDateDisplay(
+          p.row?.monthlyBillingLatest?.nextPaymentDate
+        );
+        return (
+          <Typography
+            color={color}
+            fontWeight={fontWeight}
+            sx={{ cursor: 'pointer', mt: 2, textDecoration: 'underline' }}
+            onClick={() => handlePaymentDueClick(p.row)}
+          >
+            {text}
+          </Typography>
+        );
+      },
+    });
 
     cols.push({
       field: 'actions',
@@ -560,6 +559,13 @@ export default function StudentList(props) {
         </Box>
 
         <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={closeMenu}>
+          <MenuItem>
+            <CustomSwitch
+              checked={menuRow?.active}
+              onChange={() => onToggleActive(menuRow)}
+              inputProps={{ 'aria-label': 'toggle active' }}
+            />
+          </MenuItem>
           <MenuItem onClick={handleEdit}>
             <EditIcon fontSize="small" sx={{ mr: 1 }} /> Edit
           </MenuItem>
