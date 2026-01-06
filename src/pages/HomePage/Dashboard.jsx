@@ -427,6 +427,47 @@ const Dashboard = () => {
     setSelectedStudent(null);
   };
 
+  const getStudentsPaidBetweenDates = (students, startDate, endDate) => {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const paidStudentsMap = new Map();
+
+    students.forEach((student) => {
+      const bills = student?.subcollections?.monthlyBilling ?? [];
+
+      bills.forEach((bill) => {
+        if (!bill.paymentDate) return;
+
+        // 🔹 Firestore Timestamp support
+        const paymentDate =
+          bill.paymentDate?.seconds != null
+            ? new Date(bill.paymentDate.seconds * 1000)
+            : new Date(bill.paymentDate);
+
+        if (isNaN(paymentDate)) return;
+
+        if (paymentDate >= start && paymentDate <= end) {
+          paidStudentsMap.set(student.id, {
+            ...student,
+            paymentDate,
+            paidAmount:
+              Number(bill.basicFee || 0) + Number(bill.seatFee || 0) + Number(bill.lockerFee || 0),
+          });
+        }
+      });
+    });
+
+    return Array.from(paidStudentsMap.values());
+  };
+
+  const dec2025PaidStudents = useMemo(() => {
+    return getStudentsPaidBetweenDates(students, '2025-12-01', '2025-12-31');
+  }, [students]);
+
   return (
     <Fragment>
       {openPaymentDetail && (
@@ -682,6 +723,35 @@ const Dashboard = () => {
               students={billing.dueInNextDays(activeStudents, 7).list_of_student}
               loading={loading}
               amountTextColor="warning.main"
+              handlePaymentClick={handlePaymentClick}
+            />
+          </Grid>
+        </Grid>
+        {/* Table for payment  */}
+        <Grid container spacing={2} sx={{ p: 1 }}>
+          <Grid item size={{ xs: 12, sm: 6 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                transition: 'all 240ms ease-in-out',
+                mt: 2,
+                mb: 1,
+              }}
+            >
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: '500' }}>
+                  Payment between 1st dec to 31st dec 2025
+                </Typography>
+              </Box>
+            </Box>
+            <MiniStudentList
+              students={dec2025PaidStudents}
+              loading={loading}
+              amountTextColor="success.main"
               handlePaymentClick={handlePaymentClick}
             />
           </Grid>
