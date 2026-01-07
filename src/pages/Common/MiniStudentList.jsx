@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import { Skeleton } from '@mui/material';
 import { Empty } from 'antd';
-import { defaultBoxBorderRadius, getDueDateDisplay } from '../../utils/utils';
+import { defaultBoxBorderRadius, formatDate, getDueDateDisplay } from '../../utils/utils';
 
 export default function MiniStudentList({
   students = [],
@@ -17,6 +17,8 @@ export default function MiniStudentList({
   loading = true,
   handlePaymentClick,
   amountTextColor = 'primary.main',
+  amountKey = '',
+  paidDateKey = '',
 }) {
   if (loading)
     return (
@@ -145,7 +147,7 @@ export default function MiniStudentList({
                     }}
                     onClick={() => handlePaymentClick?.(student)}
                   >
-                    ₹{student.due_amount || 0}
+                    ₹{amountKey ? student[amountKey] || 0 : student.due_amount || 0}
                   </Typography>
 
                   <Typography
@@ -159,7 +161,7 @@ export default function MiniStudentList({
                       maxWidth: { xs: '100%', sm: '140px' },
                     }}
                   >
-                    {text}
+                    {paidDateKey ? formatDate(student[paidDateKey]) : text}
                   </Typography>
                 </Box>
               </ListItem>

@@ -427,14 +427,19 @@ const Dashboard = () => {
     setSelectedStudent(null);
   };
 
-  const getStudentsPaidBetweenDates = (students, startDate, endDate) => {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
+  const toDate = (d) => {
+    const date = new Date(d);
+    return isNaN(date.getTime()) ? null : date;
+  };
 
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+  const getStudentsPaidInDateRange = (students, startDateStr, endDateStr) => {
+    const startDate = new Date(startDateStr);
+    startDate.setHours(0, 0, 0, 0);
 
-    const paidStudentsMap = new Map();
+    const endDate = new Date(endDateStr);
+    endDate.setHours(23, 59, 59, 999);
+
+    const resultMap = new Map(); // avoid duplicates
 
     students.forEach((student) => {
       const bills = student?.subcollections?.monthlyBilling ?? [];
@@ -442,18 +447,15 @@ const Dashboard = () => {
       bills.forEach((bill) => {
         if (!bill.paymentDate) return;
 
-        // 🔹 Firestore Timestamp support
-        const paymentDate =
-          bill.paymentDate?.seconds != null
-            ? new Date(bill.paymentDate.seconds * 1000)
-            : new Date(bill.paymentDate);
+        const paymentDate = toDate(bill.paymentDate);
+        if (!paymentDate) return;
 
-        if (isNaN(paymentDate)) return;
-
-        if (paymentDate >= start && paymentDate <= end) {
-          paidStudentsMap.set(student.id, {
-            ...student,
-            paymentDate,
+        if (paymentDate >= startDate && paymentDate <= endDate) {
+          resultMap.set(student.id, {
+            // ...student,
+            studentName: student?.studentName || '--',
+            phoneNumber: student?.phoneNumber || '--',
+            paidOn: bill.paymentDate,
             paidAmount:
               Number(bill.basicFee || 0) + Number(bill.seatFee || 0) + Number(bill.lockerFee || 0),
           });
@@ -461,11 +463,11 @@ const Dashboard = () => {
       });
     });
 
-    return Array.from(paidStudentsMap.values());
+    return Array.from(resultMap.values());
   };
 
   const dec2025PaidStudents = useMemo(() => {
-    return getStudentsPaidBetweenDates(students, '2025-12-01', '2025-12-31');
+    return getStudentsPaidInDateRange(students, '2025-12-01', '2025-12-31');
   }, [students]);
 
   return (
@@ -744,7 +746,7 @@ const Dashboard = () => {
             >
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: '500' }}>
-                  Payment between 1st dec to 31st dec 2025
+                  Payment between 1st dec to 31st dec 2025 ( {dec2025PaidStudents?.length ?? 0} )
                 </Typography>
               </Box>
             </Box>
@@ -753,6 +755,8 @@ const Dashboard = () => {
               loading={loading}
               amountTextColor="success.main"
               handlePaymentClick={handlePaymentClick}
+              amountKey="paidAmount"
+              paidDateKey="paidOn"
             />
           </Grid>
         </Grid>
