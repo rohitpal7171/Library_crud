@@ -24,7 +24,7 @@ import {
   VisibilityOff,
 } from '@mui/icons-material';
 import { StatCard } from '../../components/customComponents/CustomCard';
-import { BarChart, LineChart } from '@mui/x-charts';
+import { LineChart } from '@mui/x-charts';
 import { useFirebase } from '../../context/Firebase';
 import MiniStudentList from '../Common/MiniStudentList';
 import { PaymentDetail } from './PaymentDetail';
@@ -140,9 +140,10 @@ const Dashboard = () => {
     .map((month) => ({ month, count: stats.monthlyJoining[month] || 0, barLabel: month }))
     .filter((item) => item.count > 0);
 
-  const valueFormatter = (value) => {
-    return `${value}`;
-  };
+  // for bar chart
+  // const valueFormatter = (value) => {
+  //   return `${value}`;
+  // };
 
   const getEntryTotal = (e = {}) =>
     Number(e.basicFee || 0) + Number(e.lockerFee || 0) + Number(e.seatFee || 0);
@@ -391,28 +392,29 @@ const Dashboard = () => {
     };
   }, [students]);
 
-  const chartSetting = {
-    xAxis: [
-      {
-        dataKey: 'month',
-        scale: 'band',
-        interval: 0,
-        tickPlacement: 'middle',
-        tickLabelPlacement: 'middle',
-        padding: { left: 0.12, right: 0.12 },
-      },
-    ],
-    yAxis: [
-      {
-        label: 'Number of Students',
-        width: 60,
-      },
-    ],
-    series: [{ dataKey: 'count', label: 'Student Enrolled', valueFormatter }],
-    height: 290,
-    // margin: { left: 0 },
-    margin: { left: 28, right: 14, top: 10, bottom: 36 },
-  };
+  // -- for bar chart
+  // const chartSetting = {
+  //   xAxis: [
+  //     {
+  //       dataKey: 'month',
+  //       scale: 'band',
+  //       interval: 0,
+  //       tickPlacement: 'middle',
+  //       tickLabelPlacement: 'middle',
+  //       padding: { left: 0.12, right: 0.12 },
+  //     },
+  //   ],
+  //   yAxis: [
+  //     {
+  //       label: 'Number of Students',
+  //       width: 60,
+  //     },
+  //   ],
+  //   series: [{ dataKey: 'count', label: 'Student Enrolled', valueFormatter }],
+  //   height: 290,
+  //   // margin: { left: 0 },
+  //   margin: { left: 28, right: 14, top: 10, bottom: 36 },
+  // };
 
   const handlePaymentClick = useCallback(
     (item) => {
@@ -427,48 +429,48 @@ const Dashboard = () => {
     setSelectedStudent(null);
   };
 
-  const toDate = (d) => {
-    const date = new Date(d);
-    return isNaN(date.getTime()) ? null : date;
-  };
+  // const toDate = (d) => {
+  //   const date = new Date(d);
+  //   return isNaN(date.getTime()) ? null : date;
+  // };
 
-  const getStudentsPaidInDateRange = (students, startDateStr, endDateStr) => {
-    const startDate = new Date(startDateStr);
-    startDate.setHours(0, 0, 0, 0);
+  // const getStudentsPaidInDateRange = (students, startDateStr, endDateStr) => {
+  //   const startDate = new Date(startDateStr);
+  //   startDate.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(endDateStr);
-    endDate.setHours(23, 59, 59, 999);
+  //   const endDate = new Date(endDateStr);
+  //   endDate.setHours(23, 59, 59, 999);
 
-    const resultMap = new Map(); // avoid duplicates
+  //   const resultMap = new Map(); // avoid duplicates
 
-    students.forEach((student) => {
-      const bills = student?.subcollections?.monthlyBilling ?? [];
+  //   students.forEach((student) => {
+  //     const bills = student?.subcollections?.monthlyBilling ?? [];
 
-      bills.forEach((bill) => {
-        if (!bill.paymentDate) return;
+  //     bills.forEach((bill) => {
+  //       if (!bill.paymentDate) return;
 
-        const paymentDate = toDate(bill.paymentDate);
-        if (!paymentDate) return;
+  //       const paymentDate = toDate(bill.paymentDate);
+  //       if (!paymentDate) return;
 
-        if (paymentDate >= startDate && paymentDate <= endDate) {
-          resultMap.set(student.id, {
-            // ...student,
-            studentName: student?.studentName || '--',
-            phoneNumber: student?.phoneNumber || '--',
-            paidOn: bill.paymentDate,
-            paidAmount:
-              Number(bill.basicFee || 0) + Number(bill.seatFee || 0) + Number(bill.lockerFee || 0),
-          });
-        }
-      });
-    });
+  //       if (paymentDate >= startDate && paymentDate <= endDate) {
+  //         resultMap.set(student.id, {
+  //           // ...student,
+  //           studentName: student?.studentName || '--',
+  //           phoneNumber: student?.phoneNumber || '--',
+  //           paidOn: bill.paymentDate,
+  //           paidAmount:
+  //             Number(bill.basicFee || 0) + Number(bill.seatFee || 0) + Number(bill.lockerFee || 0),
+  //         });
+  //       }
+  //     });
+  //   });
 
-    return Array.from(resultMap.values());
-  };
+  //   return Array.from(resultMap.values());
+  // };
 
-  const dec2025PaidStudents = useMemo(() => {
-    return getStudentsPaidInDateRange(students, '2025-12-01', '2025-12-31');
-  }, [students]);
+  // const dec2025PaidStudents = useMemo(() => {
+  //   return getStudentsPaidInDateRange(students, '2025-12-01', '2025-12-31');
+  // }, [students]);
 
   return (
     <Fragment>
@@ -525,11 +527,28 @@ const Dashboard = () => {
               <Typography variant="text" sx={{ fontWeight: 'bold' }}>
                 Student Enrolled in current Year : {new Date().getFullYear()}
               </Typography>
-              <BarChart
+              {/* <BarChart
                 loading={loading}
                 dataset={monthlyData}
                 borderRadius={20}
                 {...chartSetting}
+              /> */}
+              <LineChart
+                xAxis={[
+                  {
+                    scaleType: 'point',
+                    data: monthlyData.map((d) => d.month),
+                  },
+                ]}
+                series={[
+                  {
+                    data: monthlyData.map((d) => d.count),
+                    label: 'Students Enrolled',
+                    color: '#e99931ff',
+                  },
+                ]}
+                height={290}
+                loading={loading}
               />
             </Paper>
           </Grid>
@@ -730,7 +749,7 @@ const Dashboard = () => {
           </Grid>
         </Grid>
         {/* Table for payment  */}
-        <Grid container spacing={2} sx={{ p: 1 }}>
+        {/* <Grid container spacing={2} sx={{ p: 1 }}>
           <Grid item size={{ xs: 12, sm: 6 }}>
             <Box
               sx={{
@@ -759,7 +778,7 @@ const Dashboard = () => {
               paidDateKey="paidOn"
             />
           </Grid>
-        </Grid>
+        </Grid> */}
       </Box>
     </Fragment>
   );
