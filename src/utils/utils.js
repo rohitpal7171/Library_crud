@@ -214,3 +214,46 @@ export const dateToString = (d) => {
     return '';
   }
 };
+
+export const financialMonthOrder = [
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+];
+
+export const monthOrder = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+export const currentYear = new Date().getFullYear();
+export const currentMonth = new Date().getMonth();
+
+// Decide FY start year (India logic)
+export const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+export const fyEndYear = fyStartYear + 1;
+
+// Build ordered months with year
+export const financialMonthsWithYear = [
+  ...financialMonthOrder.slice(0, 9).map((m) => `${m} ${fyStartYear}`), // Apr–Dec
+  ...financialMonthOrder.slice(9).map((m) => `${m} ${fyStartYear + 1}`), // Jan–Mar
+];

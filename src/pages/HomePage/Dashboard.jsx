@@ -1,5 +1,11 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { defaultBoxBorderRadius, defaultBoxPadding } from '../../utils/utils';
+import {
+  defaultBoxBorderRadius,
+  defaultBoxPadding,
+  financialMonthsWithYear,
+  fyEndYear,
+  fyStartYear,
+} from '../../utils/utils';
 import {
   Box,
   Grid,
@@ -101,7 +107,10 @@ const Dashboard = () => {
     const monthlyJoining = students.reduce((acc, s) => {
       const date = new Date(s.dateOfJoining);
       const month = date.toLocaleString('default', { month: 'short' });
-      acc[month] = (acc[month] || 0) + 1;
+      const year = date.getFullYear();
+      const key = `${month} ${year}`;
+
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
 
@@ -122,28 +131,10 @@ const Dashboard = () => {
     };
   }, [students, activeStudents]);
 
-  const monthOrder = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  const monthlyData = monthOrder
-    .map((month) => ({ month, count: stats.monthlyJoining[month] || 0, barLabel: month }))
-    .filter((item) => item.count > 0);
-
-  // for bar chart
-  // const valueFormatter = (value) => {
-  //   return `${value}`;
-  // };
+  const monthlyData = financialMonthsWithYear.map((label) => ({
+    month: label,
+    count: stats.monthlyJoining[label] || 0,
+  }));
 
   const getEntryTotal = (e = {}) =>
     Number(e.basicFee || 0) + Number(e.lockerFee || 0) + Number(e.seatFee || 0);
@@ -392,30 +383,6 @@ const Dashboard = () => {
     };
   }, [students]);
 
-  // -- for bar chart
-  // const chartSetting = {
-  //   xAxis: [
-  //     {
-  //       dataKey: 'month',
-  //       scale: 'band',
-  //       interval: 0,
-  //       tickPlacement: 'middle',
-  //       tickLabelPlacement: 'middle',
-  //       padding: { left: 0.12, right: 0.12 },
-  //     },
-  //   ],
-  //   yAxis: [
-  //     {
-  //       label: 'Number of Students',
-  //       width: 60,
-  //     },
-  //   ],
-  //   series: [{ dataKey: 'count', label: 'Student Enrolled', valueFormatter }],
-  //   height: 290,
-  //   // margin: { left: 0 },
-  //   margin: { left: 28, right: 14, top: 10, bottom: 36 },
-  // };
-
   const handlePaymentClick = useCallback(
     (item) => {
       setSelectedStudent(item);
@@ -428,49 +395,6 @@ const Dashboard = () => {
     setOpenPaymentDetail(false);
     setSelectedStudent(null);
   };
-
-  // const toDate = (d) => {
-  //   const date = new Date(d);
-  //   return isNaN(date.getTime()) ? null : date;
-  // };
-
-  // const getStudentsPaidInDateRange = (students, startDateStr, endDateStr) => {
-  //   const startDate = new Date(startDateStr);
-  //   startDate.setHours(0, 0, 0, 0);
-
-  //   const endDate = new Date(endDateStr);
-  //   endDate.setHours(23, 59, 59, 999);
-
-  //   const resultMap = new Map(); // avoid duplicates
-
-  //   students.forEach((student) => {
-  //     const bills = student?.subcollections?.monthlyBilling ?? [];
-
-  //     bills.forEach((bill) => {
-  //       if (!bill.paymentDate) return;
-
-  //       const paymentDate = toDate(bill.paymentDate);
-  //       if (!paymentDate) return;
-
-  //       if (paymentDate >= startDate && paymentDate <= endDate) {
-  //         resultMap.set(student.id, {
-  //           // ...student,
-  //           studentName: student?.studentName || '--',
-  //           phoneNumber: student?.phoneNumber || '--',
-  //           paidOn: bill.paymentDate,
-  //           paidAmount:
-  //             Number(bill.basicFee || 0) + Number(bill.seatFee || 0) + Number(bill.lockerFee || 0),
-  //         });
-  //       }
-  //     });
-  //   });
-
-  //   return Array.from(resultMap.values());
-  // };
-
-  // const dec2025PaidStudents = useMemo(() => {
-  //   return getStudentsPaidInDateRange(students, '2025-12-01', '2025-12-31');
-  // }, [students]);
 
   return (
     <Fragment>
@@ -525,14 +449,8 @@ const Dashboard = () => {
               sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: defaultBoxBorderRadius }}
             >
               <Typography variant="text" sx={{ fontWeight: 'bold' }}>
-                Student Enrolled in current Year : {new Date().getFullYear()}
+                Students Enrolled (FY {fyStartYear}-{fyEndYear.toString().slice(-2)})
               </Typography>
-              {/* <BarChart
-                loading={loading}
-                dataset={monthlyData}
-                borderRadius={20}
-                {...chartSetting}
-              /> */}
               <LineChart
                 xAxis={[
                   {
