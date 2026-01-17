@@ -157,14 +157,14 @@ export const FirebaseProvider = (props) => {
 
   // cloud Database - to add document with data in collection
   const createDataInFireStore = useCallback(
-    async (collectionName = 'students', data) => {
+    async (collectionName = 'students', data, additionalKeyName = 'humanId') => {
       try {
         const { monthlyBilling, ...restData } = data;
 
         const humanId = await getNextHumanId(firebaseCloudFirestore, collectionName);
         const modifiedData = {
           ...restData,
-          humanId: humanId,
+          [additionalKeyName]: humanId,
           createdAt: serverTimestamp(),
           modifiedAt: serverTimestamp(),
         };
@@ -374,6 +374,80 @@ export const FirebaseProvider = (props) => {
         };
       } catch (err) {
         console.error('queryDocuments error', err);
+        return { error: err };
+      }
+    },
+    []
+  );
+
+  const getOnlyCollectionData = useCallback(
+    async ({
+      collectionName = 'students',
+      filters = null, // accepts object, tuple, array of either
+      orderField = 'createdAt',
+      orderDirection = 'desc',
+      pageSize = 1000,
+      lastVisible = null,
+    } = {}) => {
+      try {
+        const collectionRef = collection(firebaseCloudFirestore, collectionName);
+
+        // If caller passed `{ filters: {...} }` by mistake, unwrap it
+        if (filters && typeof filters === 'object' && 'filters' in filters) {
+          filters = filters.filters;
+        }
+
+        // Normalize to array of tuples [field, operator, value]
+        const toTuple = (f) => {
+          if (Array.isArray(f)) return f;
+          if (f && typeof f === 'object') {
+            return [f.field, f.operator || '==', f.value];
+          }
+          return [undefined, undefined, undefined]; // will be caught by validator
+        };
+
+        const filterTuples =
+          filters == null ? [] : Array.isArray(filters) ? filters.map(toTuple) : [toTuple(filters)];
+
+        // Validate before building query (prevents _delegate crash)
+        const invalid = filterTuples.find(
+          (t) =>
+            !Array.isArray(t) ||
+            t.length < 3 ||
+            typeof t[0] !== 'string' ||
+            typeof t[1] !== 'string'
+        );
+        if (invalid) {
+          console.error('Invalid filter provided:', invalid, 'filters:', filters);
+          throw new Error(
+            "Invalid filter: expected ['field','==',value] or { field, operator, value }"
+          );
+        }
+        if (!orderField || typeof orderField !== 'string') {
+          throw new Error('orderField must be a non-empty string');
+        }
+
+        const conditions = filterTuples.map(([f, op, v]) => where(f, op, v));
+
+        const q = query(
+          collectionRef,
+          ...conditions,
+          orderBy(orderField, orderDirection),
+          ...(lastVisible ? [startAfter(lastVisible)] : []),
+          limit(pageSize)
+        );
+
+        const snapshot = await getDocs(q);
+        let docs = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }));
+
+        return {
+          data: docs,
+          lastVisible: snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null,
+        };
+      } catch (err) {
         return { error: err };
       }
     },
@@ -721,6 +795,7 @@ export const FirebaseProvider = (props) => {
     getSubcollectionDocumentsByStudentId,
     getCollectionWithSubcollections,
     editSubCollectionInFireStore,
+    getOnlyCollectionData,
 
     // Realtime DB generics
     putDataInRealtimeDatabase,

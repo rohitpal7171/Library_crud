@@ -15,19 +15,18 @@ const HomePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ keep URL and local setSidebarSelectedPage state in sync (e.g., on refresh)
   useEffect(() => {
-    if (location.pathname.startsWith('/students')) {
-      setSidebarSelectedPage('students');
-    } else {
-      setSidebarSelectedPage('dashboard');
-    }
+    const path = location.pathname.split('/')[1]; // first segment
+    setSidebarSelectedPage(path || 'dashboard');
   }, [location.pathname]);
 
   const handleNavigate = (key) => {
     setSidebarSelectedPage(key);
-    if (key === 'dashboard') navigate('/');
-    if (key === 'students') navigate('/students');
+    if (key === 'dashboard') {
+      navigate('/');
+    } else {
+      navigate(`/${key}`);
+    }
     setOpenSidebar(false);
   };
 

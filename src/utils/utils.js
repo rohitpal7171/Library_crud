@@ -37,6 +37,24 @@ export const defaultSchemaValues = {
   monthlyBilling: defaultMonthlyPaymentSchema,
 };
 
+export const expenseType = {
+  Rent: 'Rent',
+  Salary: 'Salary',
+  Cleaner: 'Cleaner',
+  'Water bill': 'Water bill',
+  'Electricity bill': 'Electricity bill',
+  'Internet bill': 'Internet bill',
+  Stationery: 'Stationery',
+  Repairs: 'Repairs',
+  Miscellaneous: 'Miscellaneous',
+};
+
+export const defaultExpenseSchemaValues = {
+  expenseType: 'Rent',
+  miscellaneous: '',
+  expensePaid: 0,
+};
+
 export const formatFileSize = (bytes) => {
   if (bytes === 0 || !bytes) return '0 KB';
 

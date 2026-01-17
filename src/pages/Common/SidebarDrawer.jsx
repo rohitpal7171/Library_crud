@@ -13,7 +13,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { useFirebase } from '../../context/Firebase';
 import { Box } from '@mui/material';
-import { Logout } from '@mui/icons-material';
+import { Logout, Paid, PriceCheck } from '@mui/icons-material';
 
 const drawerWidth = 240;
 
@@ -75,6 +75,8 @@ export default function SidebarDrawer({ open, setOpen, selectedPage, onNavigate 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, key: 'dashboard' },
     { text: 'Student List', icon: <PeopleAltIcon />, key: 'students' },
+    { text: 'Expense', icon: <Paid />, key: 'expenses' },
+    { text: 'Payment', icon: <PriceCheck />, key: 'payments' },
   ];
 
   const handleSignOut = () => {

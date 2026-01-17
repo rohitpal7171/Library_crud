@@ -7,6 +7,8 @@ import Dashboard from './pages/HomePage/Dashboard';
 import StudentDashboard from './pages/HomePage/StudentDashboard';
 import { LoginPage } from './pages/Auth/LoginPage';
 import { LinearProgress } from '@mui/material';
+import Expense from './pages/Expense/Expense';
+import PaymentPage from './pages/PaymentDashboard/PaymentPage';
 
 function App() {
   const { firebaseUser, firebaseAuthLoading } = useFirebase() || {};
@@ -17,7 +19,7 @@ function App() {
       // not logged in → route to /login or show guest UI
       console.log('User is logged out');
     } else {
-      console.log('User is logged in:', firebaseUser.uid);
+      // console.log('User is logged in:', firebaseUser.uid);
     }
   }, [firebaseAuthLoading, firebaseUser]);
 
@@ -31,6 +33,8 @@ function App() {
       <Route path="/" element={firebaseUser ? <HomePage /> : <Navigate to="/login" replace />}>
         <Route index element={<Dashboard />} />
         <Route path="students" element={<StudentDashboard />} />
+        <Route path="expenses" element={<Expense />} />
+        <Route path="payments" element={<PaymentPage />} />
       </Route>
       {/* Catch-all: redirect unknown routes */}
       <Route path="*" element={<Navigate to={firebaseUser ? '/' : '/login'} replace />} />
