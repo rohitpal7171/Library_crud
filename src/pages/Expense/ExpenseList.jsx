@@ -11,7 +11,6 @@ import { Fragment, useCallback, useMemo, useState } from 'react';
 import {
   defaultBoxBorderRadius,
   defaultBoxPadding,
-  firebaseTimestampToDate,
   formatDate,
   safeValue,
 } from '../../utils/utils';
@@ -136,12 +135,21 @@ const ExpenseList = (props) => {
 
     if (isMd) {
       cols.push({
-        field: 'modifiedAt',
-        headerName: 'Modified At',
+        field: 'expenseDate',
+        headerName: 'Expense Date',
         flex: 1,
         minWidth: 180,
         renderCell: (params) => {
-          return safeValue(formatDate(firebaseTimestampToDate(params.row.modifiedAt)));
+          return safeValue(formatDate(params.row.expenseDate));
+        },
+      });
+      cols.push({
+        field: 'expensePaymentMethod',
+        headerName: 'Payment Method',
+        flex: 1,
+        minWidth: 180,
+        renderCell: (params) => {
+          return safeValue(params.row.expensePaymentMethod) ?? 'CASH';
         },
       });
       cols.push({

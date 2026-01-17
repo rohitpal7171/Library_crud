@@ -53,6 +53,8 @@ export const defaultExpenseSchemaValues = {
   expenseType: 'Rent',
   miscellaneous: '',
   expensePaid: 0,
+  expenseDate: '',
+  expensePaymentMethod: '',
 };
 
 export const formatFileSize = (bytes) => {

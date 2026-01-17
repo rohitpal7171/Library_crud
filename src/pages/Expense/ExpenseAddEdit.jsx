@@ -203,6 +203,62 @@ const ExpenseAddEdit = ({ open, onClose, editData, type = 'ADD', fetchData }) =>
                 )}
               />
             </Grid>
+
+            <Grid item size={{ xs: 24 }}>
+              <Typography sx={labelSx}>Date of Expense</Typography>
+              <Controller
+                name="expenseDate"
+                control={control}
+                rules={{ required: 'Date of expense is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    type="date"
+                    fullWidth
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                    error={!!errors.expenseDate}
+                    helperText={errors.expenseDate?.message || ''}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 24 }}>
+              <Typography sx={labelSx}>Payment Method</Typography>
+              <Controller
+                name="expensePaymentMethod"
+                control={control}
+                rules={{ required: 'Please select a payment method' }}
+                render={({ field, fieldState: { error } }) => (
+                  <TextField
+                    {...field}
+                    select
+                    fullWidth
+                    size="small"
+                    // placeholder="Select type"
+                    value={field.value} // ensures it's empty by default
+                    error={!!error}
+                    helperText={error ? error.message : ''}
+                    SelectProps={{
+                      displayEmpty: true,
+                      renderValue: (selected) => {
+                        // show "Select type" when empty
+                        if (!selected) {
+                          return <>Select type</>;
+                        }
+                        // optionally map value to label (if you prefer label text instead of raw value)
+                        return selected;
+                      },
+                    }}
+                  >
+                    {/* <MenuItem value="">Select type</MenuItem> optional default option */}
+                    <MenuItem value="CASH">Cash</MenuItem>
+                    <MenuItem value="ONLINE">Online</MenuItem>
+                  </TextField>
+                )}
+              />
+            </Grid>
           </Grid>
         </DialogContent>
         <DialogActions
