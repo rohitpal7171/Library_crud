@@ -1,4 +1,12 @@
-import { Box, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Typography,
+  useMediaQuery,
+  useTheme,
+  Menu,
+  MenuItem,
+} from '@mui/material';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import {
   defaultBoxBorderRadius,
@@ -14,6 +22,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useFirebase } from '../../context/Firebase';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import ExpenseAddEdit from './ExpenseAddEdit';
+import { CurrencyRupee } from '@mui/icons-material';
 
 const ExpenseList = (props) => {
   const {
@@ -74,6 +83,21 @@ const ExpenseList = (props) => {
     [setLoading, firebaseContext, showSnackbar, fetchData]
   );
 
+  const closeMenu = useCallback(() => {
+    setMenuAnchorEl(null);
+    setMenuRow(null);
+  }, []);
+
+  const handleEdit = useCallback(() => {
+    onEditDirect(menuRow);
+    closeMenu();
+  }, [menuRow, closeMenu, onEditDirect]);
+
+  const handleDelete = useCallback(() => {
+    onDeleteDirect(menuRow?.id);
+    closeMenu();
+  }, [menuRow, closeMenu, onDeleteDirect]);
+
   const handleAddEditFormClose = () => {
     setOpenEditForm(false);
     setSelectedDataForEdit(null);
@@ -87,12 +111,31 @@ const ExpenseList = (props) => {
         flex: 1.5,
         minWidth: 180,
         renderCell: (params) => {
-          return params.row.expenseType === 'miscellaneous'
-            ? safeValue(params.row.miscellaneous)
-            : params.row.expenseType;
+          return (
+            <Box sx={{ marginTop: '15px' }}>
+              <Typography variant="body1" sx={{ fontWeight: '500' }}>
+                {params.row.expenseType === 'miscellaneous'
+                  ? safeValue(params.row.miscellaneous)
+                  : params.row.expenseType}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <CurrencyRupee fontSize="10px" /> {safeValue(params.row.expensePaid)}
+              </Typography>
+            </Box>
+          );
         },
       },
-      {
+    ];
+
+    if (isMd) {
+      cols.push({
         field: 'modifiedAt',
         headerName: 'Modified At',
         flex: 1,
@@ -100,17 +143,28 @@ const ExpenseList = (props) => {
         renderCell: (params) => {
           return safeValue(formatDate(firebaseTimestampToDate(params.row.modifiedAt)));
         },
-      },
-      {
+      });
+      cols.push({
         field: 'expensePaid',
         headerName: 'Expense Paid',
         flex: 1,
         minWidth: 180,
         renderCell: (params) => {
-          return safeValue(params.row.expensePaid);
+          return (
+            <Typography
+              variant="body2"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                marginTop: '25px',
+              }}
+            >
+              <CurrencyRupee fontSize="10px" /> {safeValue(params.row.expensePaid)}
+            </Typography>
+          );
         },
-      },
-    ];
+      });
+    }
 
     cols.push({
       field: 'actions',
@@ -155,7 +209,9 @@ const ExpenseList = (props) => {
       },
     });
     return cols;
-  }, []);
+  }, [isMd, isXs, onDeleteDirect, onEditDirect, openMenu]);
+
+  const innerHeight = 'calc(75vh - 16px)';
 
   return (
     <Fragment>
@@ -216,6 +272,14 @@ const ExpenseList = (props) => {
             }}
           />
         </Box>
+        <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={closeMenu}>
+          <MenuItem onClick={handleEdit}>
+            <EditIcon fontSize="small" sx={{ mr: 1 }} /> Edit
+          </MenuItem>
+          <MenuItem onClick={handleDelete}>
+            <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete
+          </MenuItem>
+        </Menu>
       </Box>
     </Fragment>
   );
