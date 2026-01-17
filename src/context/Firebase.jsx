@@ -228,47 +228,6 @@ export const FirebaseProvider = (props) => {
     }
   };
 
-  // const getDocumentsByQuery = useCallback(
-  //   async (
-  //     collectionName = 'students',
-  //     // Accept either:
-  //     //  - a single filter tuple: ['age', '>=', 18]
-  //     //  - an array of such tuples: [['age','>=',18], ['status','==','active']]
-  //     //  - null/undefined -> no filters (get all docs)
-  //     filters = null
-  //   ) => {
-  //     try {
-  //       const collectionRef = collection(firebaseCloudFirestore, collectionName);
-
-  //       // Normalize filters into an array of tuples
-  //       const normalizedFilters = !filters
-  //         ? []
-  //         : Array.isArray(filters) && Array.isArray(filters[0])
-  //         ? filters // already array of tuples
-  //         : [filters]; // single tuple passed
-
-  //       // Build query only if there are filters
-  //       const q = normalizedFilters.length
-  //         ? query(
-  //             collectionRef,
-  //             ...normalizedFilters.map(([field, opStr, value]) => where(field, opStr, value))
-  //           )
-  //         : query(collectionRef); // or just collectionRef (query(collectionRef) is fine)
-
-  //       const snapshot = await getDocs(q);
-  //       const docs = [];
-  //       snapshot.forEach((docSnap) => {
-  //         docs.push({ id: docSnap.id, ...docSnap.data() });
-  //       });
-  //       return { data: docs };
-  //     } catch (err) {
-  //       console.error('queryDocuments error', err);
-  //       return { error: err };
-  //     }
-  //   },
-  //   []
-  // );
-
   // Helper to fetch latest monthlyBilling doc for a student
   const getLatestMonthlyBilling = async (studentId, collectionName = 'students') => {
     const basePath = `${collectionName}/${studentId}/monthlyBilling`;
