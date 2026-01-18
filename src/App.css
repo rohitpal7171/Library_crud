@@ -2,3 +2,34 @@ body {
   margin: 0;
   padding: 0;
 }
+
+.table-cell-display-flex {
+  display: flex !important;
+  align-items: center !important;
+}
+.table-cell-display-flex-right {
+  justify-content: right !important;
+}
+
+.font-bold {
+  font-weight: bold !important;
+}
+
+.position-sticky {
+  position: sticky !important;
+}
+
+.table-header {
+  background-color: #f0f4ff !important;
+  color: #4d4d4d !important;
+  font-weight: bold !important;
+}
+
+.table-footer {
+  background-color: #e8ebf5 !important;
+  color: #4d4d4d !important;
+  font-weight: bold !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 2 !important;
+}
