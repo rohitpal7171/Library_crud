@@ -339,9 +339,19 @@ const Dashboard = () => {
     const getMonthlyGrowthSeries = ({ months = 12, today = new Date() } = {}) => {
       // Map of YYYY-MM → total revenue for that month
       const revenueMap = new Map();
+      const studentCountMap = new Map();
+
       for (const [key, arr] of Object.entries(entriesByMonth)) {
-        const total = arr.reduce((sum, e) => sum + getEntryTotal(e), 0);
+        const students = new Set();
+        let total = 0;
+
+        arr.forEach((e) => {
+          if (e?.studentId) students.add(e.studentId);
+          total += getEntryTotal(e);
+        });
+
         revenueMap.set(key, total);
+        studentCountMap.set(key, students.size);
       }
 
       // Build contiguous 12-month range, filling missing months with 0
@@ -349,13 +359,18 @@ const Dashboard = () => {
       const labels = monthDates.map(labelMMMYY);
       const values = monthDates.map((d) => revenueMap.get(ymKey(d)) ?? 0);
 
+      const studentCounts = monthDates.map((d) => studentCountMap.get(ymKey(d)) ?? 0);
+
       // Prepare LineChart-compatible structures
       const xAxis = [{ scaleType: 'point', data: labels }];
       const series = [
         {
           data: values,
           label: 'Total Revenue',
-          valueFormatter: (v) => `₹${Number(v || 0).toLocaleString()}`, // Show ₹ formatted value
+          valueFormatter: (v, ctx) => {
+            const count = studentCounts[ctx.dataIndex] ?? 0;
+            return `₹${Number(v || 0).toLocaleString()} • ${count} students`;
+          },
         },
       ];
 
@@ -365,6 +380,7 @@ const Dashboard = () => {
         values,
         xAxis,
         series,
+        studentCounts,
       };
     };
 
