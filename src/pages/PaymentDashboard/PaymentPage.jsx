@@ -2,6 +2,8 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useFirebase } from '../../context/Firebase';
 import PaymentFilterAndAction from './PaymentFilterAndAction';
 import PaymentList from './PaymentList';
+import dayjs from 'dayjs';
+import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 
 const PaymentPage = () => {
   const [studentPayments, setStudentPayments] = useState([]);
@@ -14,7 +16,13 @@ const PaymentPage = () => {
     ids: new Set(),
   });
 
+  const [clientFilters, setClientFilters] = useState({
+    startPaymentDate: null,
+    endPaymentDate: null,
+  });
+
   const firebaseContext = useFirebase();
+  const { showSnackbar } = useSnackbar();
 
   const fetcheData = useCallback(() => {
     setLoading(true);
@@ -40,53 +48,67 @@ const PaymentPage = () => {
     fetcheData();
   }, [fetcheData]);
 
-  const applyFilter = (filterBody) => {
-    const { startDate, endDate } = filterBody;
-    const hasFilter = startDate && endDate;
+  const applyFilter = () => {
+    const { startPaymentDate, endPaymentDate } = clientFilters;
 
-    return studentPayments
+    if (!startPaymentDate && !endPaymentDate) {
+      showSnackbar({ severity: 'warning', message: 'Filter not selected!' });
+      return;
+    }
+
+    if (!startPaymentDate || !endPaymentDate) {
+      showSnackbar({ severity: 'error', message: 'Both start and end date are required!' });
+      return;
+    }
+
+    const start = dayjs(startPaymentDate).startOf('day');
+    const end = dayjs(endPaymentDate).endOf('day');
+    setLoading(true);
+    const filtered = studentPayments
       .map((student) => {
         const billings = student?.subcollections?.monthlyBilling || [];
 
-        // Filter only if date range selected
-        const filteredBillings = hasFilter
-          ? billings.filter((item) => {
-              const payment = new Date(item.paymentDate);
-              return payment >= new Date(startDate) && payment <= new Date(endDate);
-            })
-          : billings;
+        const filteredBillings = billings.filter((item) => {
+          const payment = dayjs(item.paymentDate);
+          return (
+            (payment.isAfter(start) && payment.isBefore(end)) ||
+            payment.isSame(start, 'day') ||
+            payment.isSame(end, 'day')
+          );
+        });
 
-        // If filter applied and no records → remove student
-        if (hasFilter && filteredBillings.length === 0) return null;
-
-        // Calculate totals safely (string/number issue handled)
-        const totals = filteredBillings.reduce(
-          (acc, item) => {
-            acc.basic += Number(item.basicFee || 0);
-            acc.seat += Number(item.seatFee || 0);
-            acc.locker += Number(item.lockerFee || 0);
-            return acc;
-          },
-          { basic: 0, seat: 0, locker: 0 }
-        );
+        if (filteredBillings.length === 0) return null;
 
         return {
           ...student,
-          filteredBilling: filteredBillings,
-          totals: {
-            basicFee: totals.basic,
-            seatFee: totals.seat,
-            lockerFee: totals.locker,
-            grandTotal: totals.basic + totals.seat + totals.locker,
+          subcollections: {
+            ...student.subcollections,
+            monthlyBilling: filteredBillings, // 🔥 this is the key fix
           },
         };
       })
-      .filter(Boolean); // removes null students
+      .filter(Boolean);
+
+    setFilteredPayments(filtered);
+    setLoading(false);
+  };
+
+  const resetFilters = () => {
+    setClientFilters({
+      startPaymentDate: null,
+      endPaymentDate: null,
+    });
+    setFilteredPayments(studentPayments);
   };
 
   return (
     <Fragment>
-      <PaymentFilterAndAction fetchData={fetcheData} applyFilter={applyFilter} />
+      <PaymentFilterAndAction
+        applyFilter={applyFilter}
+        clientFilters={clientFilters}
+        setClientFilters={setClientFilters}
+        resetFilters={resetFilters}
+      />
       <PaymentList
         data={filteredPayments}
         loading={loading}
