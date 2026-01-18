@@ -13,7 +13,7 @@ import {
   TableFooter,
 } from '@mui/material';
 import { Fragment, useMemo, useState } from 'react';
-import { defaultBoxPadding, safeValue } from '../../utils/utils';
+import { defaultBoxPadding, formatDate, safeValue } from '../../utils/utils';
 import { CurrencyRupee, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import { Spin } from 'antd';
 
@@ -80,7 +80,11 @@ const PaymentList = (props) => {
           <TableCell component="th" scope="row">
             {safeValue(row.studentName)}
           </TableCell>
-          <TableCell align="right">{safeValue(row?.monthlyBillingLatest?.paymentDate)}</TableCell>
+          <TableCell align="right">
+            {row?.monthlyBillingLatest?.paymentDate
+              ? formatDate(row?.monthlyBillingLatest?.paymentDate)
+              : '-'}
+          </TableCell>
           <TableCell align="right">
             {totalBasicFees ? (
               <div className="table-cell-display-flex table-cell-display-flex-right">
@@ -121,19 +125,25 @@ const PaymentList = (props) => {
         <TableRow>
           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
             <Collapse in={open} timeout="auto" unmountOnExit>
-              <Box sx={{ margin: 5 }}>
-                <Typography variant="h6" gutterBottom component="div">
+              <Box sx={{ margin: 4 }}>
+                <Typography variant="subtitle2" className="font-bold" sx={{ marginBottom: 2 }}>
                   Payment History
                 </Typography>
                 <Table size="small" aria-label="purchases">
                   <TableHead>
                     <TableRow>
-                      <TableCell>Payment Date</TableCell>
-                      <TableCell>Payment Method</TableCell>
-                      <TableCell>Basic Fee</TableCell>
-                      <TableCell align="right">Seat Fee</TableCell>
-                      <TableCell align="right">Seat Fee</TableCell>
-                      <TableCell align="right">Total</TableCell>
+                      <TableCell className="table-header">Payment Date</TableCell>
+                      <TableCell className="table-header">Payment Method</TableCell>
+                      <TableCell className="table-header">Basic Fee</TableCell>
+                      <TableCell align="right" className="table-header">
+                        Seat Fee
+                      </TableCell>
+                      <TableCell align="right" className="table-header">
+                        Locker Fee
+                      </TableCell>
+                      <TableCell align="right" className="table-header">
+                        Total
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -141,14 +151,20 @@ const PaymentList = (props) => {
                       row?.subcollections?.monthlyBilling?.map((historyRow) => (
                         <TableRow key={historyRow.paymentDate}>
                           <TableCell component="th" scope="row">
-                            {historyRow.paymentDate}
+                            {historyRow?.paymentDate ? formatDate(historyRow.paymentDate) : '-'}
                           </TableCell>
                           <TableCell component="th" scope="row">
-                            {historyRow.paymentBy}
+                            {historyRow?.paymentBy ? historyRow.paymentBy : '-'}
                           </TableCell>
-                          <TableCell>{historyRow.basicFee}</TableCell>
-                          <TableCell align="right">{historyRow.seatFee}</TableCell>
-                          <TableCell align="right">{historyRow.lockerFee}</TableCell>
+                          <TableCell>
+                            {historyRow?.basicFee ? safeValue(historyRow.basicFee) : '-'}
+                          </TableCell>
+                          <TableCell align="right">
+                            {historyRow?.seatFee ? safeValue(historyRow.seatFee) : '-'}
+                          </TableCell>
+                          <TableCell align="right">
+                            {historyRow?.lockerFee ? safeValue(historyRow.lockerFee) : '-'}
+                          </TableCell>
                           <TableCell align="right">
                             {Number(historyRow.basicFee) +
                               Number(historyRow.seatFee) +
