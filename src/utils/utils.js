@@ -55,6 +55,7 @@ export const defaultExpenseSchemaValues = {
   expensePaid: 0,
   expenseDate: '',
   expensePaymentMethod: '',
+  remarks: '',
 };
 
 export const formatFileSize = (bytes) => {

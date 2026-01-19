@@ -110,7 +110,7 @@ const ExpenseList = (props) => {
         flex: 1.5,
         minWidth: 180,
         renderCell: (params) => {
-          return (
+          return isXs ? (
             <Box sx={{ marginTop: '15px' }}>
               <Typography variant="body1" sx={{ fontWeight: '500' }}>
                 {params.row.expenseType === 'miscellaneous'
@@ -128,6 +128,10 @@ const ExpenseList = (props) => {
                 <CurrencyRupee fontSize="10px" /> {safeValue(params.row.expensePaid)}
               </Typography>
             </Box>
+          ) : params.row.expenseType === 'miscellaneous' ? (
+            safeValue(params.row.miscellaneous)
+          ) : (
+            params.row.expenseType
           );
         },
       },
@@ -154,7 +158,7 @@ const ExpenseList = (props) => {
       });
       cols.push({
         field: 'expensePaid',
-        headerName: 'Expense Paid',
+        headerName: 'Amount',
         flex: 1,
         minWidth: 180,
         renderCell: (params) => {
@@ -170,6 +174,15 @@ const ExpenseList = (props) => {
               <CurrencyRupee fontSize="10px" /> {safeValue(params.row.expensePaid)}
             </Typography>
           );
+        },
+      });
+      cols.push({
+        field: 'remarks',
+        headerName: 'Remarks',
+        flex: 1,
+        minWidth: 180,
+        renderCell: (params) => {
+          return safeValue(params.row.remarks) ?? '-';
         },
       });
     }

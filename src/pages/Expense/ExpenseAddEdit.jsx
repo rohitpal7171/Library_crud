@@ -64,7 +64,6 @@ const ExpenseAddEdit = ({ open, onClose, editData, type = 'ADD', fetchData }) =>
     setFormLoading(true);
 
     if (type === 'ADD') {
-      // hello add
       firebaseContext
         .createDataInFireStore('expenses', data, 'expenseId')
         .then(async () => {
@@ -256,6 +255,24 @@ const ExpenseAddEdit = ({ open, onClose, editData, type = 'ADD', fetchData }) =>
                     <MenuItem value="CASH">Cash</MenuItem>
                     <MenuItem value="ONLINE">Online</MenuItem>
                   </TextField>
+                )}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 24 }}>
+              <Typography sx={labelSx}>Remarks</Typography>
+              <Controller
+                name="remarks"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    placeholder="Enter something additional..."
+                    fullWidth
+                    multiline
+                    rows={2}
+                    size="small"
+                  />
                 )}
               />
             </Grid>
