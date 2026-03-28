@@ -23,6 +23,8 @@ const Expense = () => {
         .getOnlyCollectionData({
           collectionName: 'expenses',
           filters: filters,
+          orderField: 'expenseDate',
+          orderDirection: 'desc',
         })
         .then((response) => {
           setExpenses(response?.data ?? []);
