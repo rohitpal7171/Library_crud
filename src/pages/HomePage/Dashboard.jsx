@@ -3,6 +3,7 @@ import {
   defaultBoxBorderRadius,
   defaultBoxPadding,
   financialMonthsWithYear,
+  formatMonthYear,
   fyEndYear,
   fyStartYear,
 } from '../../utils/utils';
@@ -30,7 +31,7 @@ import {
   VisibilityOff,
 } from '@mui/icons-material';
 import { StatCard } from '../../components/customComponents/CustomCard';
-import { LineChart } from '@mui/x-charts';
+import { LineChart, ChartsTooltipContainer, useItemTooltip } from '@mui/x-charts';
 import { useFirebase } from '../../context/Firebase';
 import MiniStudentList from '../Common/MiniStudentList';
 import { PaymentDetail } from './PaymentDetail';
@@ -38,9 +39,30 @@ import { PaymentDetail } from './PaymentDetail';
 const Dashboard = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [expenses, setExpenses] = useState([]);
+  const [expenseLoading, setExpenseLoading] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [openPaymentDetail, setOpenPaymentDetail] = useState(false);
   const [currentYearEarningVisibility, setCurrentYearEarningVisibility] = useState(false);
+
+  // Helper: Generate "YYYY-MM" keys from Date
+  const ymKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+  // Helper: Move forward/backward by N months
+  const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
+
+  // Helper: Format as "Oct 25" style for chart labels
+  const labelMMMYY = (d) =>
+    d.toLocaleString('en-US', { month: 'short' }) + ' ' + String(d.getFullYear()).slice(-2);
+
+  // Helper: Build last N consecutive months (default: 12)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const buildMonthSpan = (endDate = new Date(), count = 12) => {
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1); // start from 1st of current month
+    const months = [];
+    for (let i = count - 1; i >= 0; i--) months.push(addMonths(end, -i));
+    return months;
+  };
 
   const firebaseContext = useFirebase();
 
@@ -61,6 +83,31 @@ const Dashboard = () => {
         setLoading(false);
       });
   }, [firebaseContext, setStudents, setLoading]);
+
+  const fetchExpenseData = useCallback(
+    (filters) => {
+      setExpenseLoading(true);
+      firebaseContext
+        .getOnlyCollectionData({
+          collectionName: 'expenses',
+          filters: filters,
+        })
+        .then((response) => {
+          setExpenses(response?.data ?? []);
+          setExpenseLoading(false);
+        })
+        .catch((err) => {
+          console.log('Error fetching expense data:', err);
+          setExpenses([]);
+          setExpenseLoading(false);
+        });
+    },
+    [firebaseContext, setExpenses, setExpenseLoading]
+  );
+
+  useEffect(() => {
+    fetchExpenseData([]);
+  }, [fetchExpenseData]);
 
   useEffect(() => {
     fetchStudentData();
@@ -317,24 +364,6 @@ const Dashboard = () => {
       };
     };
 
-    // Helper: Generate "YYYY-MM" keys from Date
-    const ymKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-    // Helper: Move forward/backward by N months
-    const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1);
-
-    // Helper: Format as "Oct 25" style for chart labels
-    const labelMMMYY = (d) =>
-      d.toLocaleString('en-US', { month: 'short' }) + ' ' + String(d.getFullYear()).slice(-2);
-
-    // Helper: Build last N consecutive months (default: 12)
-    const buildMonthSpan = (endDate = new Date(), count = 12) => {
-      const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1); // start from 1st of current month
-      const months = [];
-      for (let i = count - 1; i >= 0; i--) months.push(addMonths(end, -i));
-      return months;
-    };
-
     // Function: Builds a 12-month growth dataset for total revenue (basic + seat + locker)
     const getMonthlyGrowthSeries = ({ months = 12, today = new Date() } = {}) => {
       // Map of YYYY-MM → total revenue for that month
@@ -397,7 +426,7 @@ const Dashboard = () => {
       getCurrentYearEarnings,
       getMonthlyGrowthSeries,
     };
-  }, [students]);
+  }, [students, buildMonthSpan]);
 
   const handlePaymentClick = useCallback(
     (item) => {
@@ -411,6 +440,129 @@ const Dashboard = () => {
     setOpenPaymentDetail(false);
     setSelectedStudent(null);
   };
+
+  function CustomExpenseTooltip(props) {
+    const tooltipData = useItemTooltip();
+
+    if (!tooltipData || !tooltipData.identifier) return null;
+
+    const { dataIndex } = tooltipData.identifier;
+
+    const { monthlyData, categoryMap } = props.extraData;
+
+    const month = monthlyData[dataIndex]?.month;
+    const total = monthlyData[dataIndex]?.count;
+
+    const categories = categoryMap[month] || {};
+
+    const sortedCategories = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+
+    return (
+      <ChartsTooltipContainer {...props}>
+        <div
+          style={{
+            padding: '12px 14px',
+            minWidth: 200,
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 10,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          {/* Month */}
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 14,
+              marginBottom: 6,
+              color: '#111827',
+            }}
+          >
+            {month}
+          </div>
+
+          {/* Total */}
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#374151',
+              marginBottom: 8,
+            }}
+          >
+            Total: ₹{total?.toLocaleString()}
+          </div>
+
+          {/* Divider */}
+          <div
+            style={{
+              height: 1,
+              background: '#e5e7eb',
+              margin: '6px 0 8px',
+            }}
+          />
+
+          {/* Categories */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {sortedCategories.map(([cat, val]) => (
+              <div
+                key={cat}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 12,
+                  color: '#4b5563',
+                }}
+              >
+                <span>{cat}</span>
+                <span style={{ fontWeight: 500 }}>₹{val.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </ChartsTooltipContainer>
+    );
+  }
+
+  const CustomExpenseTooltipWithData = (props) => (
+    <CustomExpenseTooltip {...props} extraData={expenseCalculationObject} />
+  );
+
+  const expenseCalculationObject = useMemo(() => {
+    const monthlyMap = {};
+    const categoryMap = {};
+
+    // initialize all months with 0 (so graph doesn't break)
+    financialMonthsWithYear.forEach((month) => {
+      monthlyMap[month] = 0;
+      categoryMap[month] = {};
+    });
+
+    expenses.forEach((item) => {
+      const monthYear = formatMonthYear(item.expenseDate);
+      const amount = Number(item.expensePaid || 0);
+      const category = item.expenseType || 'Others';
+
+      if (monthlyMap[monthYear] !== undefined) {
+        // total
+        monthlyMap[monthYear] += amount;
+
+        // category-wise
+        categoryMap[monthYear][category] = (categoryMap[monthYear][category] || 0) + amount;
+      }
+    });
+
+    const monthlyData = financialMonthsWithYear.map((label) => ({
+      month: label,
+      count: monthlyMap[label],
+    }));
+
+    return {
+      monthlyData,
+      categoryMap,
+    };
+  }, [expenses]);
 
   return (
     <Fragment>
@@ -625,6 +777,41 @@ const Dashboard = () => {
               </Grid>
             </Grid>
           </Grid>
+        </Grid>
+
+        <Grid container spacing={2}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, flex: 1, mt: 2, height: 300, borderRadius: defaultBoxBorderRadius }}
+          >
+            <Typography variant="text" sx={{ fontWeight: 'bold' }}>
+              Expenses (FY {fyStartYear}-{fyEndYear.toString().slice(-2)})
+            </Typography>
+            <div style={{ position: 'relative' }}>
+              <LineChart
+                xAxis={[
+                  {
+                    scaleType: 'point',
+                    data: expenseCalculationObject.monthlyData.map((d) => d.month),
+                  },
+                ]}
+                series={[
+                  {
+                    data: expenseCalculationObject.monthlyData.map((d) => d.count),
+                    label: 'Expenses',
+                    color: '#D32F2F',
+                    showMark: true,
+                  },
+                ]}
+                height={290}
+                loading={expenseLoading}
+                tooltip={{ trigger: 'item' }}
+                slots={{
+                  tooltip: CustomExpenseTooltipWithData,
+                }}
+              />
+            </div>
+          </Paper>
         </Grid>
 
         {/* Table for Due Amount and Upcoming Due */}

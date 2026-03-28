@@ -158,6 +158,14 @@ export const formatFirebaseTimestamp = (ts, options = {}) => {
   });
 };
 
+export const formatMonthYear = (dateStr) => {
+  const date = new Date(dateStr);
+  return date.toLocaleString('default', {
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
 export const getDueDateDisplay = (timestamp) => {
   const date = firebaseTimestampToDate(timestamp);
   if (!date) return { text: '—', color: 'text.primary', fontWeight: 400 };
