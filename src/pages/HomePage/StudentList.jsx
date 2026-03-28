@@ -154,6 +154,69 @@ export default function StudentList(props) {
     [closeMenu, firebaseContext, fetchStudentData, setLoading, showSnackbar, serverFilters]
   );
 
+  const getStudentNameValueGetter = (row) => {
+    const name = row?.studentName || '--';
+    const phone1 = row?.phoneNumber;
+    const phone2 = row?.phoneNumber2;
+
+    const parts = [name];
+
+    if (phone1) parts.push(phone1);
+    if (phone2) parts.push(phone2);
+
+    return parts.join('\r\n'); // multiline (better for Excel)
+  };
+
+  const getDateOfJoiningValueGetter = (row) => {
+    const doj = row?.dateOfJoining ? formatDate(row?.dateOfJoining) : '--';
+    const humanId = row?.humanId ? row.humanId : 'ID not present';
+
+    return `${doj}\r\n${humanId}`;
+  };
+
+  const getSeatLockerValueGetter = (row) => {
+    if (!row?.seatNumber && !row?.lockerNumber) return '--';
+
+    const parts = [];
+
+    if (row?.seatReserved && row?.seatNumber) {
+      parts.push(`Seat: ${row.seatNumber}`);
+    }
+
+    if (row?.locker && row?.lockerNumber) {
+      parts.push(`Locker: ${row.lockerNumber}`);
+    }
+
+    // return parts.join(' | ') || '--';
+    return parts.join('\r\n');
+  };
+
+  const getIDorDocumentsValueGetter = (row) => {
+    const aadhaar = row?.aadhaarNumber ? row.aadhaarNumber : '--';
+    const documents = row?.documents?.length ?? 0;
+
+    if (!row?.aadhaarNumber && !documents) {
+      return '--';
+    }
+
+    const parts = [];
+
+    if (row?.aadhaarNumber) {
+      parts.push(`Aadhaar: ${aadhaar}`);
+    }
+
+    if (documents) {
+      parts.push(`Documents: ${documents}`);
+    }
+
+    return parts.join('\r\n'); // multiline for CSV/Excel
+  };
+
+  const getDueDateValueGetter = (row) => {
+    const { text } = getDueDateDisplay(row?.monthlyBillingLatest?.nextPaymentDate);
+    return text || '--';
+  };
+
   const columns = useMemo(() => {
     const cols = [
       {
@@ -161,6 +224,7 @@ export default function StudentList(props) {
         headerName: 'Student',
         flex: 1.5,
         minWidth: 180,
+        valueGetter: (_, row) => getStudentNameValueGetter(row),
         renderCell: (params) => {
           const initials = (params.row.studentName || 'Student')
             .split(' ')
@@ -204,7 +268,7 @@ export default function StudentList(props) {
                       },
                     }}
                   >
-                    {safeValue(params.value)}
+                    {safeValue(params.row.studentName)}
                   </Typography>
                 </Tooltip>
                 {params?.row?.phoneNumber ? (
@@ -253,7 +317,8 @@ export default function StudentList(props) {
           headerName: 'DOJ',
           flex: 0.8,
           width: 100,
-          renderCell: (p) => (
+          valueGetter: (_, row) => getDateOfJoiningValueGetter(row),
+          renderCell: (params) => (
             <Box
               sx={{
                 display: 'flex',
@@ -263,9 +328,9 @@ export default function StudentList(props) {
                 mt: 2,
               }}
             >
-              <Box>{safeValue(formatDate(p.value))}</Box>
+              <Box>{safeValue(formatDate(params.row.dateOfJoining))}</Box>
               <Box sx={{ fontWeight: 'bold' }}>
-                {p.row.humanId ? p.row.humanId : 'ID not present'}
+                {params.row.humanId ? params.row.humanId : 'ID not present'}
               </Box>
             </Box>
           ),
@@ -297,6 +362,7 @@ export default function StudentList(props) {
         headerName: 'Seat | Locker',
         width: 180,
         flex: 0.7,
+        valueGetter: (_, row) => getSeatLockerValueGetter(row),
         renderCell: (p) => {
           const seat = p.row.seatNumber ? safeValue(p.row.seatNumber) : '--';
           const locker = p.row.lockerNumber ? safeValue(p.row.lockerNumber) : '--';
@@ -326,6 +392,7 @@ export default function StudentList(props) {
         headerName: 'ID | Documents',
         flex: 1,
         width: 120,
+        valueGetter: (_, row) => getIDorDocumentsValueGetter(row),
         renderCell: (p) => {
           const aadhaar = p.row.aadhaarNumber ? safeValue(p.row.aadhaarNumber) : '--';
           const documents = p.row.documents?.length ?? 0;
@@ -355,6 +422,7 @@ export default function StudentList(props) {
       headerName: 'Due Date',
       flex: 0.8,
       width: 80,
+      valueGetter: (_, row) => getDueDateValueGetter(row),
       renderCell: (p) => {
         const { text, color, fontWeight } = getDueDateDisplay(
           p.row?.monthlyBillingLatest?.nextPaymentDate
