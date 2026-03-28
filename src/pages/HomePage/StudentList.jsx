@@ -56,6 +56,15 @@ export default function StudentList(props) {
   const [openEditForm, setOpenEditForm] = useState(false);
   const [openStudentDetail, setOpenStudentDetail] = useState(false);
   const [openPaymentDetail, setOpenPaymentDetail] = useState(false);
+  const [columnVisibilityModel, setColumnVisibilityModel] = useState({
+    fatherName: false,
+    dateOfBirth: false,
+    timings: false,
+    address: false,
+    documents: false,
+  });
+
+  // payments - if possible
 
   const firebaseContext = useFirebase();
   const { showSnackbar } = useSnackbar();
@@ -97,7 +106,7 @@ export default function StudentList(props) {
       } catch (err) {
         setLoading(false);
         showSnackbar({ severity: 'error', message: 'Error Deleting Student!' });
-        console.log(err);
+        console.error(err);
       }
     },
     [setLoading, firebaseContext, showSnackbar, fetchStudentData, serverFilters]
@@ -148,7 +157,7 @@ export default function StudentList(props) {
       } catch (err) {
         setLoading(false);
         showSnackbar({ severity: 'error', message: 'Error Updating Student Active Status!' });
-        console.log(err);
+        console.error(err);
       }
     },
     [closeMenu, firebaseContext, fetchStudentData, setLoading, showSnackbar, serverFilters]
@@ -215,6 +224,21 @@ export default function StudentList(props) {
   const getDueDateValueGetter = (row) => {
     const { text } = getDueDateDisplay(row?.monthlyBillingLatest?.nextPaymentDate);
     return text || '--';
+  };
+
+  const getDocumentsValueGetter = (row) => {
+    const docs = row?.documents;
+    // ✅ empty checks
+    if (!Array.isArray(docs) || docs.length === 0) {
+      return '';
+    }
+
+    return docs
+      .filter((doc) => doc?.url) // remove invalid entries
+      .map((doc) => {
+        return `${doc.url}`;
+      })
+      .join(' \n');
   };
 
   const columns = useMemo(() => {
@@ -308,6 +332,13 @@ export default function StudentList(props) {
           );
         },
       },
+      {
+        field: 'fatherName',
+        headerName: 'Father Name',
+        flex: 1,
+        minWidth: 120,
+        renderCell: (params) => safeValue(params.row.fatherName),
+      },
     ];
 
     if (!isXs)
@@ -334,6 +365,20 @@ export default function StudentList(props) {
               </Box>
             </Box>
           ),
+        });
+        cols.push({
+          field: 'dateOfBirth',
+          headerName: 'DOB',
+          flex: 0.8,
+          width: 100,
+          renderCell: (params) => safeValue(formatDate(params.row.dateOfBirth)),
+        });
+        cols.push({
+          field: 'timings',
+          headerName: 'Timing',
+          flex: 0.8,
+          width: 100,
+          renderCell: (params) => safeValue(params.row.timings),
         });
         cols.push({
           field: 'gender',
@@ -488,6 +533,47 @@ export default function StudentList(props) {
       },
     });
 
+    cols.push({
+      field: 'address',
+      headerName: 'Address',
+      flex: 0.8,
+      width: 100,
+      renderCell: (params) => safeValue(params.row.address),
+    });
+
+    cols.push({
+      field: 'documents',
+      headerName: 'Documents',
+      flex: 1.5,
+      minWidth: 200,
+      valueGetter: (_, row) => getDocumentsValueGetter(row),
+      renderCell: (params) => {
+        const docs = params?.row?.documents;
+        if (!Array.isArray(docs) || docs.length === 0) return '-';
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {docs.map((doc, index) =>
+              doc?.url ? (
+                <a
+                  key={index}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: 12,
+                    lineHeight: '16px',
+                    display: 'block',
+                  }}
+                >
+                  {index + 1}. {doc.originalName || 'Document'}
+                </a>
+              ) : null
+            )}
+          </div>
+        );
+      },
+    });
+
     return cols;
   }, [
     isXs,
@@ -515,6 +601,10 @@ export default function StudentList(props) {
   const handleClosePaymentDetail = () => {
     setOpenPaymentDetail(false);
     setSelectedStudentForEdit(null);
+  };
+
+  const handleColumnVisibilityChange = (newModel) => {
+    setColumnVisibilityModel(newModel);
   };
 
   return (
@@ -561,6 +651,8 @@ export default function StudentList(props) {
             disableSelectionOnClick
             disableRowSelectionOnClick
             disableVirtualization
+            columnVisibilityModel={columnVisibilityModel}
+            onColumnVisibilityModelChange={handleColumnVisibilityChange}
             // isRowSelectable={(params) => params.row.quantity > 4}
             // onRowSelectionModelChange={(newSelection) => {
             //   // 🧠 Max 10 validation
@@ -596,8 +688,15 @@ export default function StudentList(props) {
             }}
             rowSelectionModel={studentRowSelectionModel}
             showToolbar
+            slotProps={{
+              toolbar: {
+                csvOptions: {
+                  fields: columns.filter((col) => col.field !== 'actions').map((col) => col.field),
+                },
+              },
+            }}
             density="comfortable"
-            rowHeight={60}
+            rowHeight={70}
             headerHeight={50}
             style={{ height: '100%', width: '100%' }}
             loading={loading}
