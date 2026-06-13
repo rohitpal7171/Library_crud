@@ -1,0 +1,12 @@
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+
+/* Hanken Grotesk for all HTML elements; exclude SVG so MUI X Charts keeps its own font metrics */
+*:not(svg):not(svg *), *::before, *::after {
+  font-family: 'Hanken Grotesk', sans-serif !important;
+}
+
+/* Scope border-box to only the Analytics page so MUI Paper/Card heights are unaffected elsewhere */
+.analytics-page, .analytics-page *, .analytics-page *::before, .analytics-page *::after {
+  box-sizing: border-box;
+}

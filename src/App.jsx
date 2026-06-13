@@ -9,6 +9,7 @@ import { LoginPage } from './pages/Auth/LoginPage';
 import { LinearProgress } from '@mui/material';
 import Expense from './pages/Expense/Expense';
 import PaymentPage from './pages/PaymentDashboard/PaymentPage';
+import AnalyticsDashboard from './pages/AnalyticsDashboard/AnalyticsDashboard';
 
 function App() {
   const { firebaseUser, firebaseAuthLoading } = useFirebase() || {};
@@ -35,6 +36,7 @@ function App() {
         <Route path="students" element={<StudentDashboard />} />
         <Route path="expenses" element={<Expense />} />
         <Route path="payments" element={<PaymentPage />} />
+        <Route path="analytics" element={<AnalyticsDashboard />} />
       </Route>
       {/* Catch-all: redirect unknown routes */}
       <Route path="*" element={<Navigate to={firebaseUser ? '/' : '/login'} replace />} />

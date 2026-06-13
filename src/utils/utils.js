@@ -1,7 +1,7 @@
 export const defaultBoxPadding = '20px';
 export const defaultBorderColor = '#d9d9d9';
 export const labelSx = { fontSize: 13, fontWeight: 600, mb: 0.5 };
-export const defaultDashboardBackgroundColor = '#f3fafe';
+export const defaultDashboardBackgroundColor = '#f0f4f8';
 export const defaultBoxBorderRadius = 4;
 
 export const defaultMonthlyPaymentSchema = {

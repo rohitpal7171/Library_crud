@@ -36,11 +36,10 @@ const NavbarComponent = (props) => {
 
   const drawerIcon = (
     <IconButton
-      color="secondary"
       size="large"
       edge="start"
       onClick={onDrawerOpen}
-      sx={{ color: 'white' }}
+      sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)' } }}
     >
       <MenuOutlined />
     </IconButton>
@@ -60,7 +59,6 @@ const NavbarComponent = (props) => {
       try {
         setUploading(true);
 
-        // Upload to Cloudinary
         const result = await uploadToCloudinary(file, 'admin/profile');
         firebaseContext
           .updateDocument('admin', adminData.id, { profile_image: result.secure_url || result.url })
@@ -95,67 +93,27 @@ const NavbarComponent = (props) => {
       aria-label="Avatar image"
       sx={{
         borderRadius: '40px',
-        '&:has(:focus-visible)': {
-          outline: '2px solid',
-          outlineOffset: '2px',
-        },
+        '&:has(:focus-visible)': { outline: '2px solid rgba(255,255,255,0.5)', outlineOffset: '2px' },
         display: 'inline-flex',
       }}
     >
-      <Box
-        sx={{
-          position: 'relative',
-          width: 56, // outer size (spinner diameter)
-          height: 56,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {/* spinner — shown only while uploading */}
+      <Box sx={{ position: 'relative', width: 56, height: 56, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
         {uploading && (
           <CircularProgress
             size={56}
             thickness={2}
-            color="inherit"
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              // keep spinner behind the avatar
-              zIndex: 0,
-            }}
+            sx={{ color: 'rgba(255,255,255,0.4)', position: 'absolute', top: 0, left: 0, zIndex: 0 }}
           />
         )}
-
-        {/* avatar sits centered above the spinner */}
         <Avatar
           alt="Upload new avatar"
           src={adminData?.profile_image}
-          sx={{
-            width: 40, // avatar size (smaller than spinner)
-            height: 40,
-            zIndex: 1,
-            // optionally add a subtle border so it stands out over spinner
-            border: (theme) => `2px solid ${theme.palette.background.paper}`,
-          }}
+          sx={{ width: 40, height: 40, zIndex: 1, border: '2px solid rgba(255,255,255,0.2)' }}
         />
-
-        {/* hidden file input */}
         <input
           type="file"
           accept="image/*"
-          style={{
-            border: 0,
-            clip: 'rect(0 0 0 0)',
-            height: '1px',
-            margin: '-1px',
-            overflow: 'hidden',
-            padding: 0,
-            position: 'absolute',
-            whiteSpace: 'nowrap',
-            width: '1px',
-          }}
+          style={{ border: 0, clip: 'rect(0 0 0 0)', height: '1px', margin: '-1px', overflow: 'hidden', padding: 0, position: 'absolute', whiteSpace: 'nowrap', width: '1px' }}
           onChange={handleAvatarChange}
           disabled={uploading}
         />
@@ -165,17 +123,23 @@ const NavbarComponent = (props) => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="fixed">
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          backgroundColor: '#1e293b',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
         <Toolbar>
           {drawerIcon} &nbsp;
           {profileImage}
           &emsp;
           <ListItemText
-            primary={'Shivaay Library & Co-working'}
-            secondary={'( Where focus meets comfort )'}
-            secondaryTypographyProps={{
-              color: 'white',
-            }}
+            primary="Shivaay Library & Co-working"
+            secondary="( Where focus meets comfort )"
+            primaryTypographyProps={{ sx: { color: '#f1f5f9', fontWeight: 700, fontSize: '1rem' } }}
+            secondaryTypographyProps={{ sx: { color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' } }}
           />
         </Toolbar>
       </AppBar>
