@@ -7,7 +7,6 @@ import PaymentAlerts from './components/PaymentAlerts';
 import OccupancyMap from './components/OccupancyMap';
 import PLChart from './components/PLChart';
 import DistributionCharts from './components/DistributionCharts';
-import ReferralBreakdown from './components/EnrollmentAndReferral';
 import { getLatestBillingPerStudent, tsToDate } from './analyticsHelpers';
 
 export default function AnalyticsDashboard() {
@@ -123,8 +122,6 @@ export default function AnalyticsDashboard() {
           allBillingDocs={allBillingDocs}
           expenses={expenses}
         />
-
-        <ReferralBreakdown students={students} />
       </div>
     </div>
   );
