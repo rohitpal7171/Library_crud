@@ -7,9 +7,16 @@ import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import { Skeleton } from '@mui/material';
+import { IconButton, Skeleton, Tooltip } from '@mui/material';
+import { WhatsApp } from '@mui/icons-material';
 import { Empty } from 'antd';
-import { defaultBoxBorderRadius, formatDate, getDueDateDisplay } from '../../utils/utils';
+import {
+  buildPaymentReminderMessage,
+  defaultBoxBorderRadius,
+  formatDate,
+  getDueDateDisplay,
+  sendMessageOnWhatsApp,
+} from '../../utils/utils';
 
 export default function MiniStudentList({
   students = [],
@@ -19,6 +26,7 @@ export default function MiniStudentList({
   amountTextColor = 'primary.main',
   amountKey = '',
   paidDateKey = '',
+  showWhatsAppReminder = false,
 }) {
   if (loading)
     return (
@@ -109,18 +117,37 @@ export default function MiniStudentList({
                       )
                     }
                     secondary={
-                      <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: { xs: 'calc(100vw - 160px)', sm: '100%' },
-                        }}
-                      >
-                        {student.phoneNumber || 'No phone number'}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography
+                          variant="body2"
+                          color="textSecondary"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: { xs: 'calc(100vw - 160px)', sm: '100%' },
+                          }}
+                        >
+                          {student.phoneNumber || 'No phone number'}
+                        </Typography>
+                        {showWhatsAppReminder && student.phoneNumber && (
+                          <Tooltip title="Send payment reminder on WhatsApp">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sendMessageOnWhatsApp(
+                                  student.phoneNumber,
+                                  buildPaymentReminderMessage(student)
+                                );
+                              }}
+                              sx={{ color: '#25D366', p: 0.25, flexShrink: 0 }}
+                            >
+                              <WhatsApp sx={{ fontSize: 17 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
                     }
                   />
                 </Box>

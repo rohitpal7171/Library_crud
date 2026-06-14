@@ -6,6 +6,7 @@ import {
   formatMonthYear,
   fyEndYear,
   fyStartYear,
+  shareStudentListOnWhatsApp,
 } from '../../utils/utils';
 import {
   Box,
@@ -16,6 +17,7 @@ import {
   ListItemAvatar,
   ListItemText,
   Paper,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -29,6 +31,7 @@ import {
   Savings,
   Visibility,
   VisibilityOff,
+  WhatsApp,
 } from '@mui/icons-material';
 import { StatCard } from '../../components/customComponents/CustomCard';
 import { LineChart, ChartsTooltipContainer, useItemTooltip } from '@mui/x-charts';
@@ -834,12 +837,31 @@ const Dashboard = () => {
                   Due Amount
                 </Typography>
               </Box>
+              <Tooltip title="Share on WhatsApp">
+                <span>
+                  <IconButton
+                    size="small"
+                    disabled={loading || !billing.dueAmount(activeStudents).list_of_student.length}
+                    onClick={() =>
+                      shareStudentListOnWhatsApp(
+                        'Due Payments',
+                        billing.dueAmount(activeStudents).list_of_student,
+                        { emoji: '🔴', totalLabel: 'Total Due' }
+                      )
+                    }
+                    sx={{ color: '#25D366' }}
+                  >
+                    <WhatsApp />
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Box>
             <MiniStudentList
               students={billing.dueAmount(activeStudents).list_of_student}
               loading={loading}
               amountTextColor="error.main"
               handlePaymentClick={handlePaymentClick}
+              showWhatsAppReminder
             />
           </Grid>
           <Grid item size={{ xs: 12, sm: 6 }}>
@@ -860,6 +882,26 @@ const Dashboard = () => {
                   Upcoming Due ( 7 Days )
                 </Typography>
               </Box>
+              <Tooltip title="Share on WhatsApp">
+                <span>
+                  <IconButton
+                    size="small"
+                    disabled={
+                      loading || !billing.dueInNextDays(activeStudents, 7).list_of_student.length
+                    }
+                    onClick={() =>
+                      shareStudentListOnWhatsApp(
+                        'Upcoming Dues (Next 7 Days)',
+                        billing.dueInNextDays(activeStudents, 7).list_of_student,
+                        { emoji: '🟡', totalLabel: 'Total Upcoming' }
+                      )
+                    }
+                    sx={{ color: '#25D366' }}
+                  >
+                    <WhatsApp />
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Box>
             <MiniStudentList
               students={billing.dueInNextDays(activeStudents, 7).list_of_student}

@@ -220,7 +220,110 @@ export function buildWhatsAppLink(rawNumber, text) {
 
 export const sendMessageOnWhatsApp = (NumberAsE164, textToBeSend) => {
   const webUrl = buildWhatsAppLink(NumberAsE164, textToBeSend);
-  window.open(webUrl, '_blank');
+  _openWhatsAppUrl(webUrl);
+};
+
+// Shared tab reference — persists for the page session
+let _whatsappTab = null;
+
+// Reuses the existing WhatsApp tab if still open, otherwise opens a new one
+const _openWhatsAppUrl = (url) => {
+  if (_whatsappTab && !_whatsappTab.closed) {
+    _whatsappTab.location.href = url;
+    _whatsappTab.focus();
+  } else {
+    _whatsappTab = window.open(url, '_blank');
+  }
+};
+
+// Builds a personalised payment reminder message for a single student
+export const buildPaymentReminderMessage = (student) => {
+  const bill = student?.subcollections?.monthlyBilling?.[0];
+  const ts = bill?.nextPaymentDate;
+  const dueDate = ts
+    ? (ts?.seconds != null ? new Date(ts.seconds * 1000) : new Date(ts)).toLocaleDateString(
+        'en-IN',
+        { day: 'numeric', month: 'long', year: 'numeric' }
+      )
+    : '—';
+  const amount =
+    student.due_amount ||
+    parseInt(bill?.basicFee || 0) + parseInt(bill?.seatFee || 0) + parseInt(bill?.lockerFee || 0);
+  const name = student.studentName || 'Student';
+
+  return [
+    `📚 *Shivaay Library & Co-working Space*`,
+    ``,
+    `नमस्ते *${name} Ji* 🙏`,
+    ``,
+    `We hope your studies are going great! 🌟`,
+    ``,
+    `This is a gentle reminder that your library subscription is due:`,
+    ``,
+    `┌─────────────────────────┐`,
+    `│ 💳 Amount Due : *₹${amount.toLocaleString()}*`,
+    `│ 📅 Due Date   : *${dueDate}*`,
+    `└─────────────────────────┘`,
+    ``,
+    `Please renew at your earliest convenience so your favourite study spot stays reserved for you! 😊`,
+    ``,
+    `_Thank you for being a valued member_ 🎓`,
+    `_— Team Shivaay Library_ ✨`,
+  ].join('\n');
+};
+
+// Layer 1 — open WhatsApp with any pre-built message string (no specific contact)
+export const openWhatsApp = (message) => {
+  if (!message) return;
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const url = isMobile
+    ? `https://wa.me/?text=${encodeURIComponent(message)}`
+    : `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  _openWhatsAppUrl(url);
+};
+
+// Layer 2 — build a branded message from any title + string rows
+// options: { emoji, footer, showDate }
+export const buildWhatsAppMessage = (title, rows, options = {}) => {
+  const { emoji = '📋', footer = '', showDate = true } = options;
+  const today = new Date().toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  return [
+    `${emoji} *Shivaay Library — ${title}*`,
+    ...(showDate ? [`📅 ${today}`] : []),
+    '',
+    ...rows,
+    ...(footer ? ['', footer] : []),
+  ].join('\n');
+};
+
+// Layer 3 — student-list convenience wrapper (builds rows from student objects)
+// options: { emoji, totalLabel }
+export const shareStudentListOnWhatsApp = (title, students, options = {}) => {
+  if (!students?.length) return;
+
+  const { emoji = '📋', totalLabel = 'Total Due' } = options;
+
+  const rows = students.map((s, i) => {
+    const bill = s?.subcollections?.monthlyBilling?.[0];
+    const ts = bill?.nextPaymentDate;
+    const dueDate = ts
+      ? (ts?.seconds != null ? new Date(ts.seconds * 1000) : new Date(ts)).toLocaleDateString(
+          'en-IN',
+          { day: 'numeric', month: 'short', year: 'numeric' }
+        )
+      : '—';
+    const amount = s.due_amount || 0;
+    return `${i + 1}. ${s.studentName} — ₹${amount.toLocaleString()} (Due: ${dueDate})`;
+  });
+
+  const total = students.reduce((sum, s) => sum + (s.due_amount || 0), 0);
+  const footer = `💰 *${totalLabel}: ₹${total.toLocaleString()}*`;
+
+  openWhatsApp(buildWhatsAppMessage(title, rows, { emoji, footer }));
 };
 
 export const safeValue = (val) => (val ? val : '--');
