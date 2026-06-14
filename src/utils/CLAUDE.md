@@ -47,9 +47,34 @@ All helpers and constants are in `utils.js`. Import only what you need.
 defaultBoxPadding                 // '20px'
 defaultBorderColor                // '#d9d9d9'
 labelSx                           // { fontSize: 13, fontWeight: 600, mb: 0.5 }
-defaultDashboardBackgroundColor   // '#f3fafe'
+defaultDashboardBackgroundColor   // '#f0f4f8'
 defaultBoxBorderRadius            // 4
 ```
+
+### `sidebarColors` — sidebar/navbar theme palette
+
+Single source of truth for the sidebar's dark-navy theme. `SidebarDrawer.jsx` reads
+every color from here — do not hardcode colors in the component.
+
+```js
+{
+  background: '#0d1b3d',                 // sidebar surface (matches the navbar navy)
+  border: 'rgba(255,255,255,0.08)',      // right border + sign-out divider
+  itemHoverBg: 'rgba(255,255,255,0.08)', // inactive item hover
+  activeBg: 'rgba(255,255,255,0.08)',    // active item highlight (faint tint, no pill)
+  activeHoverBg: 'rgba(255,255,255,0.12)',
+  activeGlow: 'none',                    // box-shadow on active item
+  activeContent: '#ffffff',              // active icon + label
+  activeAccent: '#3b82f6',               // left indicator bar on the active item
+  iconInactive: 'rgba(255,255,255,0.85)',
+  labelInactive: '#ffffff',
+  signOutIcon / signOutLabel / signOutHover / signOutHoverBg  // red sign-out tints
+}
+```
+
+Active item = a faint tint highlight with a bright `activeAccent` bar on the left
+(only when the drawer is expanded). The navbar navy in `NavbarComponent.jsx` is still
+a local value (`rgba(13,27,61,0.92)`), not yet sourced from this palette.
 
 ---
 

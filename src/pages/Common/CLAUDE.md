@@ -20,10 +20,16 @@ Navigation drawer (collapsible). Contains nav links to all main routes:
 - Students (`/students`)
 - Expenses (`/expenses`)
 - Payments (`/payments`)
+- Analytics (`/analytics`)
 
 Also contains the sign-out button that calls `firebaseSignOut()`.
 
-**Props:** `open` (boolean), `onClose` (function)
+**Props:** `open` (boolean), `setOpen` (function), `selectedPage` (string — the active
+route key), `onNavigate` (function — called with a route key on item click).
+
+**Theme:** dark-navy sidebar. All colors come from `sidebarColors` in `src/utils/utils.js`
+— do not hardcode colors here. Active item = faint tint highlight + a bright `activeAccent`
+left bar (only when expanded); collapsed shows the active icon in a tinted chip.
 
 ---
 

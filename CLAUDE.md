@@ -34,6 +34,7 @@ npm run lint      # ESLint
 | `/students` | `StudentDashboard` | Auth required |
 | `/expenses` | `Expense` | Auth required |
 | `/payments` | `PaymentPage` | Auth required |
+| `/analytics` | `AnalyticsDashboard` | Auth required |
 | `*` | Redirect | `/` if logged in, `/login` if not |
 
 ## Authentication
@@ -83,5 +84,6 @@ npm run lint      # ESLint
 | `src/pages/HomePage/` | Student management: add/edit form, DataGrid, drawer, dashboard |
 | `src/pages/PaymentDashboard/` | Payment page and payment recording flow |
 | `src/pages/Expense/` | Expense management and form fields |
+| `src/pages/AnalyticsDashboard/` | Analytics page: summary cards, occupancy, P&L, distributions + helpers |
 | `src/pages/Common/` | Shared layout: Navbar, Sidebar, upload dialog, mini student list |
 | `src/components/customComponents/` | Reusable UI components and their props |
