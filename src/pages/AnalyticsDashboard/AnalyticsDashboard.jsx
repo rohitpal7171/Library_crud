@@ -118,7 +118,6 @@ export default function AnalyticsDashboard() {
 
         <DistributionCharts
           students={studentsWithBilling}
-          activeStudents={activeStudents}
           allBillingDocs={allBillingDocs}
           expenses={expenses}
         />

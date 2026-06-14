@@ -127,8 +127,11 @@ const NavbarComponent = (props) => {
         position="fixed"
         elevation={0}
         sx={{
-          backgroundColor: '#1e293b',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          backgroundColor: 'rgba(13,27,61,0.92)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 4px 24px rgba(2,6,23,0.35)',
         }}
       >
         <Toolbar>
@@ -138,8 +141,10 @@ const NavbarComponent = (props) => {
           <ListItemText
             primary="Shivaay Library & Co-working"
             secondary="( Where focus meets comfort )"
-            primaryTypographyProps={{ sx: { color: '#f1f5f9', fontWeight: 700, fontSize: '1rem' } }}
-            secondaryTypographyProps={{ sx: { color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' } }}
+            slotProps={{
+              primary: { sx: { color: '#f8fafc', fontWeight: 700, fontSize: '1rem' } },
+              secondary: { sx: { color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' } },
+            }}
           />
         </Toolbar>
       </AppBar>

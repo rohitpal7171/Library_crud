@@ -4,6 +4,23 @@ export const labelSx = { fontSize: 13, fontWeight: 600, mb: 0.5 };
 export const defaultDashboardBackgroundColor = '#f0f4f8';
 export const defaultBoxBorderRadius = 4;
 
+export const sidebarColors = {
+  background: '#0d1b3d',
+  border: 'rgba(255,255,255,0.08)',
+  itemHoverBg: 'rgba(255,255,255,0.08)',
+  activeBg: 'rgba(255,255,255,0.08)',
+  activeHoverBg: 'rgba(255,255,255,0.12)',
+  activeGlow: 'none',
+  activeContent: '#ffffff',
+  activeAccent: '#3b82f6',
+  iconInactive: 'rgba(255,255,255,0.85)',
+  labelInactive: '#ffffff',
+  signOutIcon: 'rgba(248,113,113,0.8)',
+  signOutLabel: 'rgba(248,113,113,0.85)',
+  signOutHover: '#fca5a5',
+  signOutHoverBg: 'rgba(239,68,68,0.15)',
+};
+
 export const defaultMonthlyPaymentSchema = {
   subscriptionType: 'month',
   subscriptionDuration: 1,

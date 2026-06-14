@@ -1,14 +1,7 @@
 import { PieChart } from '@mui/x-charts/PieChart';
-import { BarChart } from '@mui/x-charts/BarChart';
 import { groupByCount, groupExpensesByType } from '../analyticsHelpers';
 
 const COLORS = ['#3b82f6','#10b981','#f97316','#8b5cf6','#06b6d4','#f43f5e','#eab308','#6366f1','#14b8a6','#ec4899'];
-
-const axisSx = {
-  '& .MuiChartsAxis-line': { stroke: '#e8ecf0' },
-  '& .MuiChartsAxis-tick': { stroke: '#e8ecf0' },
-  '& .MuiChartsGrid-line': { stroke: '#f1f5f9', strokeDasharray: '4 3' },
-};
 
 function ChartCard({ title, subtitle, children, empty }) {
   return (
@@ -78,49 +71,15 @@ function Donut({ data }) {
   );
 }
 
-function HBar({ data, color }) {
-  return (
-    <BarChart
-      layout="horizontal"
-      yAxis={[{
-        scaleType: 'band',
-        data: data.map(d => d.label),
-        tickLabelStyle: { fontSize: 11, fill: '#94a3b8' },
-      }]}
-      xAxis={[{
-        scaleType: 'linear',
-        tickLabelStyle: { fontSize: 10, fill: '#94a3b8' },
-      }]}
-      series={[{
-        data: data.map(d => d.value),
-        color,
-        valueFormatter: v => String(v),
-      }]}
-      height={Math.max(160, data.length * 44)}
-      margin={{ left: 90, right: 16, top: 4, bottom: 24 }}
-      borderRadius={8}
-      grid={{ vertical: true }}
-      sx={axisSx}
-    />
-  );
-}
-
-export default function DistributionCharts({ students, activeStudents, allBillingDocs, expenses }) {
+export default function DistributionCharts({ students, allBillingDocs, expenses }) {
   const expenseByType    = groupExpensesByType(expenses);
   const paymentMethods   = groupByCount(allBillingDocs, 'paymentBy');
-  const subscriptionTypes = groupByCount(allBillingDocs, 'subscriptionType').map(d => ({
-    ...d,
-    label: d.label === 'month' ? 'Monthly' : d.label === 'year' ? 'Yearly' : d.label,
-  }));
   const genderCounts = groupByCount(students, 'gender');
-  const timingCounts = groupByCount(activeStudents, 'timings');
 
   const charts = [
-    { title: 'Expense Categories',  subtitle: 'Where money is spent',    data: expenseByType,     type: 'donut' },
-    { title: 'Payment Methods',     subtitle: 'Cash, UPI, etc.',          data: paymentMethods,    type: 'donut' },
-    { title: 'Subscription Type',   subtitle: 'Monthly vs yearly',        data: subscriptionTypes, type: 'donut' },
-    { title: 'Gender Distribution', subtitle: 'Student gender breakdown', data: genderCounts,      type: 'donut' },
-    { title: 'Timing Slots',        subtitle: 'Students per slot',        data: timingCounts,      type: 'hbar', color: '#6366f1' },
+    { title: 'Expense Categories',  subtitle: 'Where money is spent',    data: expenseByType },
+    { title: 'Payment Methods',     subtitle: 'Cash, UPI, etc.',          data: paymentMethods },
+    { title: 'Gender Distribution', subtitle: 'Student gender breakdown', data: genderCounts },
   ];
 
   return (
@@ -134,10 +93,7 @@ export default function DistributionCharts({ students, activeStudents, allBillin
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
         {charts.map(c => (
           <ChartCard key={c.title} title={c.title} subtitle={c.subtitle} empty={!c.data?.length}>
-            {c.type === 'donut'
-              ? <Donut data={c.data} />
-              : <HBar data={c.data} color={c.color} />
-            }
+            <Donut data={c.data} />
           </ChartCard>
         ))}
       </div>
