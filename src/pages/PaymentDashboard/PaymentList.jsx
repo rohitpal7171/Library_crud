@@ -165,29 +165,29 @@ const PaymentList = (props) => {
                           return new Date(b.paymentDate) - new Date(a.paymentDate);
                         })
                         .map((historyRow) => (
-                        <TableRow key={historyRow.paymentDate}>
-                          <TableCell component="th" scope="row">
-                            {historyRow?.paymentDate ? formatDate(historyRow.paymentDate) : '-'}
-                          </TableCell>
-                          <TableCell component="th" scope="row">
-                            {historyRow?.paymentBy ? historyRow.paymentBy : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {historyRow?.basicFee ? safeValue(historyRow.basicFee) : '-'}
-                          </TableCell>
-                          <TableCell align="right">
-                            {historyRow?.seatFee ? safeValue(historyRow.seatFee) : '-'}
-                          </TableCell>
-                          <TableCell align="right">
-                            {historyRow?.lockerFee ? safeValue(historyRow.lockerFee) : '-'}
-                          </TableCell>
-                          <TableCell align="right">
-                            {Number(historyRow.basicFee) +
-                              Number(historyRow.seatFee) +
-                              Number(historyRow.lockerFee)}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                          <TableRow key={historyRow.paymentDate}>
+                            <TableCell component="th" scope="row">
+                              {historyRow?.paymentDate ? formatDate(historyRow.paymentDate) : '-'}
+                            </TableCell>
+                            <TableCell component="th" scope="row">
+                              {historyRow?.paymentBy ? historyRow.paymentBy : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {historyRow?.basicFee ? safeValue(historyRow.basicFee) : '-'}
+                            </TableCell>
+                            <TableCell align="right">
+                              {historyRow?.seatFee ? safeValue(historyRow.seatFee) : '-'}
+                            </TableCell>
+                            <TableCell align="right">
+                              {historyRow?.lockerFee ? safeValue(historyRow.lockerFee) : '-'}
+                            </TableCell>
+                            <TableCell align="right">
+                              {Number(historyRow.basicFee) +
+                                Number(historyRow.seatFee) +
+                                Number(historyRow.lockerFee)}
+                            </TableCell>
+                          </TableRow>
+                        ))
                     ) : (
                       <>No history available</>
                     )}
@@ -205,7 +205,7 @@ const PaymentList = (props) => {
     <Fragment>
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>
         <Spin spinning={loading}>
-          <TableContainer component={Paper} sx={{ height: innerHeight - 220, overflowY: 'auto' }}>
+          <TableContainer component={Paper} sx={{ height: innerHeight - 270, overflowY: 'auto' }}>
             <Table stickyHeader aria-label="collapsible table">
               <TableHead>
                 <TableRow>

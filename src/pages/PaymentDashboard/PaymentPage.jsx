@@ -2,8 +2,10 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useFirebase } from '../../context/Firebase';
 import PaymentFilterAndAction from './PaymentFilterAndAction';
 import PaymentList from './PaymentList';
+import NormalPaymentList from './NormalPaymentList';
 import dayjs from 'dayjs';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
+import { Box, Tab, Tabs } from '@mui/material';
 
 const PaymentPage = () => {
   const [studentPayments, setStudentPayments] = useState([]);
@@ -15,6 +17,8 @@ const PaymentPage = () => {
     type: 'include',
     ids: new Set(),
   });
+
+  const [activeTab, setActiveTab] = useState(0);
 
   const [clientFilters, setClientFilters] = useState({
     startPaymentDate: null,
@@ -109,18 +113,29 @@ const PaymentPage = () => {
         setClientFilters={setClientFilters}
         resetFilters={resetFilters}
       />
-      <PaymentList
-        data={filteredPayments}
-        loading={loading}
-        pageSize={pageSize}
-        setPageSize={setPageSize}
-        setLoading={setLoading}
-        fetchData={fetcheData}
-        selectedDataForEdit={selectedDataForEdit}
-        setSelectedDataForEdit={setSelectedDataForEdit}
-        rowSelectionModel={rowSelectionModel}
-        setRowSelectionModel={setRowSelectionModel}
-      />
+      <Box sx={{ px: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)}>
+          <Tab label="Payment By Group" />
+          <Tab label="Normal Payments" />
+        </Tabs>
+      </Box>
+      {activeTab === 0 && (
+        <PaymentList
+          data={filteredPayments}
+          loading={loading}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          setLoading={setLoading}
+          fetchData={fetcheData}
+          selectedDataForEdit={selectedDataForEdit}
+          setSelectedDataForEdit={setSelectedDataForEdit}
+          rowSelectionModel={rowSelectionModel}
+          setRowSelectionModel={setRowSelectionModel}
+        />
+      )}
+      {activeTab === 1 && (
+        <NormalPaymentList data={filteredPayments} loading={loading} />
+      )}
     </Fragment>
   );
 };
