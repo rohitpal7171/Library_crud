@@ -20,6 +20,16 @@ import { Spin } from 'antd';
 const PaymentList = (props) => {
   const { data, loading } = props;
 
+  const sortedData = useMemo(() => {
+    return [...data].sort((a, b) => {
+      const dateA = a?.monthlyBillingLatest?.paymentDate;
+      const dateB = b?.monthlyBillingLatest?.paymentDate;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      return new Date(dateB) - new Date(dateA);
+    });
+  }, [data]);
+
   const footerTotals = useMemo(() => {
     const totals = data.reduce(
       (acc, student) => {
@@ -148,7 +158,13 @@ const PaymentList = (props) => {
                   </TableHead>
                   <TableBody>
                     {row?.subcollections?.monthlyBilling?.length > 0 ? (
-                      row?.subcollections?.monthlyBilling?.map((historyRow) => (
+                      [...row.subcollections.monthlyBilling]
+                        .sort((a, b) => {
+                          if (!a?.paymentDate) return 1;
+                          if (!b?.paymentDate) return -1;
+                          return new Date(b.paymentDate) - new Date(a.paymentDate);
+                        })
+                        .map((historyRow) => (
                         <TableRow key={historyRow.paymentDate}>
                           <TableCell component="th" scope="row">
                             {historyRow?.paymentDate ? formatDate(historyRow.paymentDate) : '-'}
@@ -213,7 +229,7 @@ const PaymentList = (props) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.map((row) => (
+                {sortedData.map((row) => (
                   <IndividualEntries key={row.id} row={row} />
                 ))}
               </TableBody>
