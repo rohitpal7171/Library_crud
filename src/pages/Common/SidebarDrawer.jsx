@@ -5,6 +5,7 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { Paid, PriceCheck } from '@mui/icons-material';
 import InsightsIcon from '@mui/icons-material/Insights';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import { useFirebase } from '../../context/Firebase';
 import { Box, Tooltip } from '@mui/material';
 import { sidebarColors } from '../../utils/utils';
@@ -66,6 +67,7 @@ const menuItems = [
   { text: 'Expense', Icon: Paid, key: 'expenses' },
   { text: 'Payment', Icon: PriceCheck, key: 'payments' },
   { text: 'Analytics', Icon: InsightsIcon, key: 'analytics' },
+  { text: 'Reports', Icon: AssessmentIcon, key: 'reports' },
 ];
 
 function NavItem({ item, isSelected, open, onClick }) {

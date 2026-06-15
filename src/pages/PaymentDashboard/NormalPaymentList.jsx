@@ -13,6 +13,8 @@ import { Fragment, useMemo } from 'react';
 import { CurrencyRupee } from '@mui/icons-material';
 import { Spin } from 'antd';
 import { defaultBoxPadding, formatDate, safeValue } from '../../utils/utils';
+import { exportToExcel } from '../../utils/exportUtils';
+import { FileDownload } from '@mui/icons-material';
 
 const NormalPaymentList = ({ data, loading }) => {
   const flatRows = useMemo(() => {
@@ -47,11 +49,56 @@ const NormalPaymentList = ({ data, loading }) => {
     return { ...totals, grand: totals.basic + totals.seat + totals.locker };
   }, [flatRows]);
 
+  const handleExcelExport = () => {
+    const rows = flatRows.map((r) => ({
+      studentName: r.studentName || '-',
+      humanId: r.humanId || '-',
+      paymentDate: r.paymentDate
+        ? formatDate(
+            new Date(r.paymentDate?.seconds ? r.paymentDate.seconds * 1000 : r.paymentDate)
+          )
+        : '-',
+      paymentBy: r.paymentBy || '-',
+      basicFee: r.basicFee || 0,
+      seatFee: r.seatFee || 0,
+      lockerFee: r.lockerFee || 0,
+      total: Number(r.basicFee || 0) + Number(r.seatFee || 0) + Number(r.lockerFee || 0),
+    }));
+    const columns = [
+      { key: 'studentName', label: 'Student' },
+      { key: 'humanId', label: 'ID' },
+      { key: 'paymentDate', label: 'Payment Date' },
+      { key: 'paymentBy', label: 'Method' },
+      { key: 'basicFee', label: 'Basic Fee (₹)' },
+      { key: 'seatFee', label: 'Seat Fee (₹)' },
+      { key: 'lockerFee', label: 'Locker Fee (₹)' },
+      { key: 'total', label: 'Total (₹)' },
+    ];
+    exportToExcel(rows, columns, 'Payment_List');
+  };
+
   return (
     <Fragment>
       <Box sx={{ flexGrow: 1, p: defaultBoxPadding }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Box
+            component="button"
+            onClick={handleExcelExport}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: 0.5,
+              px: 2, py: 1, borderRadius: 1.5,
+              border: '1px solid #d1d5db', cursor: 'pointer',
+              bgcolor: '#fff', color: '#16a34a', fontSize: 13, fontWeight: 500,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              transition: 'all 200ms ease',
+              '&:hover': { bgcolor: '#f0fdf4', borderColor: '#86efac' },
+            }}
+          >
+            <FileDownload sx={{ fontSize: 16, color: '#16a34a' }} /> Export Excel
+          </Box>
+        </Box>
         <Spin spinning={loading}>
-          <TableContainer component={Paper} sx={{ height: innerHeight - 280, overflowY: 'auto' }}>
+          <TableContainer component={Paper} sx={{ height: innerHeight - 300, overflowY: 'auto' }}>
             <Table stickyHeader aria-label="normal payments table">
               <TableHead>
                 <TableRow>

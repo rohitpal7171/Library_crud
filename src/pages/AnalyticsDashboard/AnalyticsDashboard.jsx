@@ -64,12 +64,18 @@ export default function AnalyticsDashboard() {
   [activeStudents]);
 
   const dueThisMonth = useMemo(() =>
-    activeStudents.filter(s => {
-      if (!s.latestBilling?.nextPaymentDate) return false;
-      const d    = tsToDate(s.latestBilling.nextPaymentDate);
-      const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      return dOnly > weekEnd && dOnly <= monthEnd;
-    }),
+    activeStudents
+      .filter(s => {
+        if (!s.latestBilling?.nextPaymentDate) return false;
+        const d    = tsToDate(s.latestBilling.nextPaymentDate);
+        const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        return dOnly > weekEnd && dOnly <= monthEnd;
+      })
+      .sort((a, b) => {
+        const da = tsToDate(a.latestBilling.nextPaymentDate);
+        const db = tsToDate(b.latestBilling.nextPaymentDate);
+        return da - db;
+      }),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [activeStudents]);
 

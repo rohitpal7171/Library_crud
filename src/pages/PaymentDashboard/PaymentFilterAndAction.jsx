@@ -72,8 +72,9 @@ const PaymentFilterAndAction = (props) => {
             onClick={() => handleApplyFilter()}
             sx={{
               minWidth: '140px',
-              transition: 'transform 140ms ease',
-              '&:hover': { transform: 'translateY(-2px)' },
+              background: '#1a2f5e !important',
+              transition: 'all 140ms ease',
+              '&:hover': { background: '#243870 !important', transform: 'translateY(-2px)' },
             }}
           >
             Apply Filter
