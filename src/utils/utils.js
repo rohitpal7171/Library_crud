@@ -252,23 +252,21 @@ export const buildPaymentReminderMessage = (student) => {
   const name = student.studentName || 'Student';
 
   return [
-    `📚 *Shivaay Library & Co-working Space*`,
+    `📚 *Shivaay Library & Co-working*`,
     ``,
-    `नमस्ते *${name} Ji* 🙏`,
+    `Hi *${name}* 🙏`,
     ``,
     `We hope your studies are going great! 🌟`,
     ``,
     `This is a gentle reminder that your library subscription is due:`,
     ``,
-    `┌─────────────────────────┐`,
-    `│ 💳 Amount Due : *₹${amount.toLocaleString()}*`,
-    `│ 📅 Due Date   : *${dueDate}*`,
-    `└─────────────────────────┘`,
+    `💳 Amount Due : *₹${amount.toLocaleString()}*`,
+    `📅 Due Date   : *${dueDate}*`,
     ``,
     `Please renew at your earliest convenience so your favourite study spot stays reserved for you! 😊`,
     ``,
     `_Thank you for being a valued member_ 🎓`,
-    `_— Team Shivaay Library_ ✨`,
+    `_— *Team Shivaay Library* ✨`,
   ].join('\n');
 };
 
