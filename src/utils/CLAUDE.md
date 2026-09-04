@@ -150,3 +150,29 @@ Builds a WhatsApp URL (wa.me on mobile, web.whatsapp.com on desktop).
 
 ### `sendMessageOnWhatsApp(NumberAsE164, textToBeSend)`
 Opens WhatsApp in a new tab with the given number and pre-filled message.
+
+---
+
+## Billing / Month Helpers
+
+### `getLatestBilling(student) → billingDoc | null`
+The **single definition** of "the student's latest monthly billing doc". Picks the entry with
+the newest `createdAt`, falling back to `paymentDate`. Returns `null` for a student with no
+billing history.
+
+Never take `student.subcollections.monthlyBilling[0]` directly — four call sites used to do
+that with three different sort orders, two of which sorted on `paymentDate.seconds`, which is
+`undefined` because payment dates are stored as `YYYY-MM-DD` strings.
+
+### `monthLabelValue(label) → number`
+Sortable value for a `'MMM YY'` display label. Returns `-Infinity` for anything unparseable.
+
+```js
+labels.sort((a, b) => monthLabelValue(a) - monthLabelValue(b))
+```
+
+**Do not use `dayjs(label, 'MMM YY')` for this.** No dayjs plugins are registered in this
+project, so the format string is ignored and every label parses to year 2001.
+
+### `formatCurrency(amount) → string`
+`₹1,00,000` — Indian digit grouping. Re-exported by `analyticsHelpers` and `reportHelpers`.

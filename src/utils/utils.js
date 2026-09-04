@@ -95,7 +95,7 @@ export const formatDate = (s) => {
     if (isNaN(d.getTime())) return s;
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   } catch (e) {
-    console.log('error while formatting date', e);
+    console.error('error while formatting date', e);
     return s;
   }
 };
@@ -240,7 +240,7 @@ const _openWhatsAppUrl = (url) => {
 
 // Builds a personalised payment reminder message for a single student
 export const buildPaymentReminderMessage = (student) => {
-  const bill = student?.subcollections?.monthlyBilling?.[0];
+  const bill = getLatestBilling(student);
   const ts = bill?.nextPaymentDate;
   const dueDate = ts
     ? (ts?.seconds != null ? new Date(ts.seconds * 1000) : new Date(ts)).toLocaleDateString(
@@ -308,7 +308,7 @@ export const shareStudentListOnWhatsApp = (title, students, options = {}) => {
   const { emoji = '📋', totalLabel = 'Total Due' } = options;
 
   const rows = students.map((s, i) => {
-    const bill = s?.subcollections?.monthlyBilling?.[0];
+    const bill = getLatestBilling(s);
     const ts = bill?.nextPaymentDate;
     const dueDate = ts
       ? (ts?.seconds != null ? new Date(ts.seconds * 1000) : new Date(ts)).toLocaleDateString(
@@ -328,6 +328,8 @@ export const shareStudentListOnWhatsApp = (title, students, options = {}) => {
 
 export const safeValue = (val) => (val ? val : '--');
 
+export const formatCurrency = (amount) => `₹${Number(amount || 0).toLocaleString('en-IN')}`;
+
 export const showSubscriptionType = (type) => {
   return type === 'month' ? 'Monthly' : 'Yearly';
 };
@@ -339,7 +341,7 @@ export const dateToString = (d) => {
     const local = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 10);
   } catch (err) {
-    console.log('error while formatting date', err);
+    console.error('error while formatting date', err);
     return '';
   }
 };
@@ -386,3 +388,23 @@ export const financialMonthsWithYear = [
   ...financialMonthOrder.slice(0, 9).map((m) => `${m} ${fyStartYear}`), // Apr–Dec
   ...financialMonthOrder.slice(9).map((m) => `${m} ${fyStartYear + 1}`), // Jan–Mar
 ];
+
+// Sortable value for a 'MMM YY' display label (e.g. 'Jun 25' → 24306).
+// dayjs cannot parse 'MMM YY' without the customParseFormat plugin — it silently
+// falls back to Date parsing and yields year 2001 for every label.
+export const monthLabelValue = (label) => {
+  const [m, y] = String(label ?? '').split(' ');
+  const monthIndex = monthOrder.indexOf(m);
+  if (monthIndex === -1 || Number.isNaN(Number(y))) return Number.NEGATIVE_INFINITY;
+  return (2000 + Number(y)) * 12 + monthIndex;
+};
+
+// The most recent monthlyBilling entry for a student, by createdAt (paymentDate as
+// fallback). Single source of truth — callers used to disagree on what "latest" meant.
+export const getLatestBilling = (student) => {
+  const bills = student?.subcollections?.monthlyBilling;
+  if (!Array.isArray(bills) || !bills.length) return null;
+  const at = (b) =>
+    firebaseTimestampToDate(b?.createdAt ?? b?.paymentDate)?.getTime() ?? -Infinity;
+  return bills.reduce((latest, bill) => (at(bill) > at(latest) ? bill : latest));
+};

@@ -1,10 +1,12 @@
 import dayjs from 'dayjs';
+import {
+  monthLabelValue,
+  getLatestBilling,
+  formatCurrency,
+  firebaseTimestampToDate as tsToDate,
+} from '../../utils/utils';
 
-export function tsToDate(ts) {
-  if (!ts) return null;
-  if (ts?.seconds != null) return new Date(ts.seconds * 1000);
-  return new Date(ts);
-}
+export { tsToDate, formatCurrency };
 
 // Returns last N calendar months as 'MMM YY' labels, oldest first
 export function getLastNMonths(n = 12) {
@@ -66,18 +68,7 @@ export function groupExpensesByType(expenses) {
 
 // Attaches the latest billing doc to each student from subcollections
 export function getLatestBillingPerStudent(students) {
-  return students.map(s => {
-    const docs = s.subcollections?.monthlyBilling || [];
-    const sorted = [...docs].sort(
-      (a, b) => (b.paymentDate?.seconds ?? 0) - (a.paymentDate?.seconds ?? 0)
-    );
-    return { ...s, latestBilling: sorted[0] || null };
-  });
-}
-
-// Formats number as Indian currency string: ₹1,00,000
-export function formatCurrency(amount) {
-  return `₹${Number(amount || 0).toLocaleString('en-IN')}`;
+  return students.map((s) => ({ ...s, latestBilling: getLatestBilling(s) }));
 }
 
 // Returns all-time enrollment grouped by month, chronologically sorted
@@ -90,8 +81,5 @@ export function getEnrollmentByMonth(students) {
   });
   return Object.entries(map)
     .map(([label, value]) => ({ label, value }))
-    .sort(
-      (a, b) =>
-        dayjs(a.label, 'MMM YY').valueOf() - dayjs(b.label, 'MMM YY').valueOf()
-    );
+    .sort((a, b) => monthLabelValue(a.label) - monthLabelValue(b.label));
 }

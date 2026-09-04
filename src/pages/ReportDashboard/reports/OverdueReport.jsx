@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { formatCurrency, tsToDate } from '../reportHelpers';
 import ExportButtons from '../components/ExportButtons';
 import { Phone } from '@mui/icons-material';
-import { formatDate } from '../../../utils/utils';
+import { formatDate, getLatestBilling } from '../../../utils/utils';
 
 export default function OverdueReport({ students }) {
   const today = dayjs();
@@ -11,12 +11,7 @@ export default function OverdueReport({ students }) {
   const overdueRows = useMemo(() => {
     const rows = [];
     students.forEach((student) => {
-      const bills = student?.subcollections?.monthlyBilling || [];
-      if (bills.length === 0) return;
-      const sorted = [...bills].sort(
-        (a, b) => (b.paymentDate?.seconds ?? 0) - (a.paymentDate?.seconds ?? 0)
-      );
-      const latest = sorted[0];
+      const latest = getLatestBilling(student);
       if (!latest?.nextPaymentDate) return;
       const due = dayjs(tsToDate(latest.nextPaymentDate));
       const daysOverdue = today.diff(due, 'day');

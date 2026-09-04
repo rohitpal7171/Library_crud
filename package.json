@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node src/utils/utils.test.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -30,7 +31,6 @@
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.65.0",
     "react-router-dom": "^7.9.3",
-    "recharts": "^3.3.0",
     "tailwindcss": "^4.3.1",
     "xlsx": "^0.18.5"
   },

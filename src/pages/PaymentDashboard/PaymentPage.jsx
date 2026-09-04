@@ -41,7 +41,7 @@ const PaymentPage = () => {
         setLoading(false);
       })
       .catch((err) => {
-        console.log('Error fetching expense data:', err);
+        console.error('Error fetching expense data:', err);
         setStudentPayments([]);
         setFilteredPayments([]);
         setLoading(false);

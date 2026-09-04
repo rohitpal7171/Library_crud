@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   defaultBoxBorderRadius,
   defaultBoxPadding,
+  getLatestBilling,
   financialMonthsWithYear,
   formatMonthYear,
   fyEndYear,
@@ -81,7 +82,7 @@ const Dashboard = () => {
         setLoading(false);
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
         setStudents([]);
         setLoading(false);
       });
@@ -100,7 +101,7 @@ const Dashboard = () => {
           setExpenseLoading(false);
         })
         .catch((err) => {
-          console.log('Error fetching expense data:', err);
+          console.error('Error fetching expense data:', err);
           setExpenses([]);
           setExpenseLoading(false);
         });
@@ -127,27 +128,21 @@ const Dashboard = () => {
     const inactive = total - active;
 
     // This month enrollments
-    const currentMonth = new Date().getMonth();
-    const thisMonthEnrollments =
-      students.filter((s) => {
-        const joinDate = new Date(s.dateOfJoining);
-        return joinDate.getMonth() === currentMonth;
-      })?.length ?? 0;
+    const now = new Date();
+    const thisMonthEnrollments = students.filter((s) => {
+      const joinDate = new Date(s.dateOfJoining);
+      if (isNaN(joinDate.getTime())) return false;
+      return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear();
+    }).length;
 
     // Documents stats
-    const totalDocuments = students.reduce((sum, s) => sum + s.documents.length, 0);
-    const missingDocuments =
-      students.filter((s) => String(s.documents.length) === String(0))?.length ?? 0;
+    const totalDocuments = students.reduce((sum, s) => sum + (s.documents?.length ?? 0), 0);
+    const missingDocuments = students.filter((s) => !s.documents?.length).length;
     const aadhaarLinked = students.filter((s) => s.aadhaarNumber)?.length ?? 0;
-    const aadhaarPercentage = ((aadhaarLinked / total) * 100).toFixed(1);
+    const aadhaarPercentage = total ? ((aadhaarLinked / total) * 100).toFixed(1) : '0.0';
 
     const withSeats = students.filter((s) => s.seatReserved)?.length ?? 0;
     const withLockers = students.filter((s) => s.locker)?.length ?? 0;
-
-    // ✅ Students with no documents
-    const studentsWithNoDocuments = students.filter(
-      (s) => !s.documents || s.documents.length === 0
-    ).length;
 
     const genderCount = students.reduce((acc, s) => {
       acc[s.gender] = (acc[s.gender] || 0) + 1;
@@ -177,7 +172,7 @@ const Dashboard = () => {
       withLockers,
       genderCount,
       monthlyJoining,
-      studentsWithNoDocuments,
+      studentsWithNoDocuments: missingDocuments,
     };
   }, [students, activeStudents]);
 
@@ -230,7 +225,7 @@ const Dashboard = () => {
       let total_due_amount = 0;
 
       for (const s of students) {
-        const bill0 = s?.subcollections?.monthlyBilling?.[0];
+        const bill0 = getLatestBilling(s);
         if (!bill0 || !bill0.nextPaymentDate) continue;
 
         // Handle Firestore-like timestamp object {seconds, nanoseconds}
@@ -250,15 +245,15 @@ const Dashboard = () => {
           list_of_student.push({
             ...s,
             due_amount,
+            due_date: dueDateOnly,
           });
-
-          // 🔽 Sort by latest date first
-          list_of_student.sort((a, b) => b.due_date - a.due_date);
 
           total_due_amount += due_amount;
         }
       }
 
+      // Most overdue first
+      list_of_student.sort((a, b) => a.due_date - b.due_date);
       return { list_of_student, total_due_amount };
     };
 
@@ -279,7 +274,7 @@ const Dashboard = () => {
       let total_due_amount = 0;
 
       for (const s of students) {
-        const bill0 = s?.subcollections?.monthlyBilling?.[0];
+        const bill0 = getLatestBilling(s);
         if (!bill0 || !bill0.nextPaymentDate) continue;
 
         // Normalize Firestore Timestamp or other inputs to a Date
@@ -305,13 +300,11 @@ const Dashboard = () => {
             due_date: dueDateOnly, // optional: handy for sorting/display
           });
 
-          // 🔽 Sort latest first (ascending order)
-          list_of_student.sort((a, b) => a.due_date - b.due_date);
-
           total_due_amount += due_amount;
         }
       }
 
+      list_of_student.sort((a, b) => a.due_date - b.due_date);
       return { list_of_student, total_due_amount };
     };
 

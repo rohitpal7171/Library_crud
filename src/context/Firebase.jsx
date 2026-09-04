@@ -1,16 +1,13 @@
-/* eslint-disable no-unused-vars */
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { firebaseApp } from './../database/firebase/firebase';
-import { getDatabase, set, ref, get, child, onValue, off } from 'firebase/database';
 import {
   getAuth,
   onAuthStateChanged,
   signOut,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
+import { getLatestBilling } from '../utils/utils';
 import {
   getFirestore,
   collection,
@@ -33,7 +30,6 @@ import {
 } from 'firebase/firestore';
 
 const FirebaseContext = createContext(null);
-const firebaseRealtimeDatabase = getDatabase(firebaseApp); // we haven't add database url in firebase config yet. so it will not work currently.
 const firebaseAuth = getAuth(firebaseApp);
 const firebaseCloudFirestore = getFirestore(firebaseApp);
 
@@ -238,180 +234,117 @@ export const FirebaseProvider = (props) => {
       const q2 = query(colRef, orderBy('createdAt', 'desc'), limit(1));
       const s2 = await getDocs(q2);
       if (!s2.empty) return { id: s2.docs[0].id, ...s2.docs[0].data() };
-    } catch (_) {
-      console.log('failed to fetch latest monthly billing doc for studentId:', studentId);
+    } catch {
+      console.error('failed to fetch latest monthly billing doc for studentId:', studentId);
     }
 
     // Last fallback — grab any one doc
     try {
       const s3 = await getDocs(query(colRef, limit(1)));
       if (!s3.empty) return { id: s3.docs[0].id, ...s3.docs[0].data() };
-    } catch (_) {
-      console.log('failed to fetch any monthly billing doc for studentId:', studentId);
+    } catch {
+      console.error('failed to fetch any monthly billing doc for studentId:', studentId);
     }
 
     return null;
   };
 
+  // Single implementation behind both public names. `enrichWithLatestBilling` costs one
+  // extra read per document, so only the student list asks for it.
+  const queryCollection = useCallback(
+    async ({
+      collectionName = 'students',
+      filters = null, // accepts object, tuple, array of either
+      orderField = 'createdAt',
+      orderDirection = 'desc',
+      pageSize = 1000,
+      lastVisible = null,
+      enrichWithLatestBilling = false,
+    } = {}) => {
+      try {
+        const collectionRef = collection(firebaseCloudFirestore, collectionName);
+
+        // If caller passed `{ filters: {...} }` by mistake, unwrap it
+        if (filters && typeof filters === 'object' && 'filters' in filters) {
+          filters = filters.filters;
+        }
+
+        // Normalize to array of tuples [field, operator, value]
+        const toTuple = (f) => {
+          if (Array.isArray(f)) return f;
+          if (f && typeof f === 'object') {
+            return [f.field, f.operator || '==', f.value];
+          }
+          return [undefined, undefined, undefined]; // will be caught by validator
+        };
+
+        const filterTuples =
+          filters == null ? [] : Array.isArray(filters) ? filters.map(toTuple) : [toTuple(filters)];
+
+        // Validate before building query (prevents _delegate crash)
+        const invalid = filterTuples.find(
+          (t) =>
+            !Array.isArray(t) ||
+            t.length < 3 ||
+            typeof t[0] !== 'string' ||
+            typeof t[1] !== 'string'
+        );
+        if (invalid) {
+          console.error('Invalid filter provided:', invalid, 'filters:', filters);
+          throw new Error(
+            "Invalid filter: expected ['field','==',value] or { field, operator, value }"
+          );
+        }
+        if (!orderField || typeof orderField !== 'string') {
+          throw new Error('orderField must be a non-empty string');
+        }
+
+        const conditions = filterTuples.map(([f, op, v]) => where(f, op, v));
+
+        const q = query(
+          collectionRef,
+          ...conditions,
+          orderBy(orderField, orderDirection),
+          ...(lastVisible ? [startAfter(lastVisible)] : []),
+          limit(pageSize)
+        );
+
+        const snapshot = await getDocs(q);
+        let docs = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }));
+
+        if (enrichWithLatestBilling) {
+          const enriched = await Promise.allSettled(
+            docs.map(async (d) => ({
+              ...d,
+              monthlyBillingLatest: await getLatestMonthlyBilling(d.id, collectionName),
+            }))
+          );
+          docs = enriched.map((res, i) =>
+            res.status === 'fulfilled' ? res.value : { ...docs[i], monthlyBillingLatest: null }
+          );
+        }
+
+        return {
+          data: docs,
+          lastVisible: snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null,
+        };
+      } catch (err) {
+        console.error('queryCollection error', err);
+        return { error: err };
+      }
+    },
+    []
+  );
+
   const getDocumentsByQuery = useCallback(
-    async ({
-      collectionName = 'students',
-      filters = null, // accepts object, tuple, array of either
-      orderField = 'createdAt',
-      orderDirection = 'desc',
-      pageSize = 1000,
-      lastVisible = null,
-    } = {}) => {
-      try {
-        const collectionRef = collection(firebaseCloudFirestore, collectionName);
-
-        // If caller passed `{ filters: {...} }` by mistake, unwrap it
-        if (filters && typeof filters === 'object' && 'filters' in filters) {
-          filters = filters.filters;
-        }
-
-        // Normalize to array of tuples [field, operator, value]
-        const toTuple = (f) => {
-          if (Array.isArray(f)) return f;
-          if (f && typeof f === 'object') {
-            return [f.field, f.operator || '==', f.value];
-          }
-          return [undefined, undefined, undefined]; // will be caught by validator
-        };
-
-        const filterTuples =
-          filters == null ? [] : Array.isArray(filters) ? filters.map(toTuple) : [toTuple(filters)];
-
-        // Validate before building query (prevents _delegate crash)
-        const invalid = filterTuples.find(
-          (t) =>
-            !Array.isArray(t) ||
-            t.length < 3 ||
-            typeof t[0] !== 'string' ||
-            typeof t[1] !== 'string'
-        );
-        if (invalid) {
-          console.error('Invalid filter provided:', invalid, 'filters:', filters);
-          throw new Error(
-            "Invalid filter: expected ['field','==',value] or { field, operator, value }"
-          );
-        }
-        if (!orderField || typeof orderField !== 'string') {
-          throw new Error('orderField must be a non-empty string');
-        }
-
-        const conditions = filterTuples.map(([f, op, v]) => where(f, op, v));
-
-        const q = query(
-          collectionRef,
-          ...conditions,
-          orderBy(orderField, orderDirection),
-          ...(lastVisible ? [startAfter(lastVisible)] : []),
-          limit(pageSize)
-        );
-
-        const snapshot = await getDocs(q);
-        let docs = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        }));
-
-        // Enrich with latest monthlyBilling doc
-        const enriched = await Promise.allSettled(
-          docs.map(async (d) => {
-            const latestBilling = await getLatestMonthlyBilling(d.id, collectionName);
-            return { ...d, monthlyBillingLatest: latestBilling };
-          })
-        );
-        docs = enriched.map((res, i) =>
-          res.status === 'fulfilled' ? res.value : { ...docs[i], monthlyBillingLatest: null }
-        );
-
-        return {
-          data: docs,
-          lastVisible: snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null,
-        };
-      } catch (err) {
-        console.error('queryDocuments error', err);
-        return { error: err };
-      }
-    },
-    []
+    (options = {}) => queryCollection({ ...options, enrichWithLatestBilling: true }),
+    [queryCollection]
   );
 
-  const getOnlyCollectionData = useCallback(
-    async ({
-      collectionName = 'students',
-      filters = null, // accepts object, tuple, array of either
-      orderField = 'createdAt',
-      orderDirection = 'desc',
-      pageSize = 1000,
-      lastVisible = null,
-    } = {}) => {
-      try {
-        const collectionRef = collection(firebaseCloudFirestore, collectionName);
-
-        // If caller passed `{ filters: {...} }` by mistake, unwrap it
-        if (filters && typeof filters === 'object' && 'filters' in filters) {
-          filters = filters.filters;
-        }
-
-        // Normalize to array of tuples [field, operator, value]
-        const toTuple = (f) => {
-          if (Array.isArray(f)) return f;
-          if (f && typeof f === 'object') {
-            return [f.field, f.operator || '==', f.value];
-          }
-          return [undefined, undefined, undefined]; // will be caught by validator
-        };
-
-        const filterTuples =
-          filters == null ? [] : Array.isArray(filters) ? filters.map(toTuple) : [toTuple(filters)];
-
-        // Validate before building query (prevents _delegate crash)
-        const invalid = filterTuples.find(
-          (t) =>
-            !Array.isArray(t) ||
-            t.length < 3 ||
-            typeof t[0] !== 'string' ||
-            typeof t[1] !== 'string'
-        );
-        if (invalid) {
-          console.error('Invalid filter provided:', invalid, 'filters:', filters);
-          throw new Error(
-            "Invalid filter: expected ['field','==',value] or { field, operator, value }"
-          );
-        }
-        if (!orderField || typeof orderField !== 'string') {
-          throw new Error('orderField must be a non-empty string');
-        }
-
-        const conditions = filterTuples.map(([f, op, v]) => where(f, op, v));
-
-        const q = query(
-          collectionRef,
-          ...conditions,
-          orderBy(orderField, orderDirection),
-          ...(lastVisible ? [startAfter(lastVisible)] : []),
-          limit(pageSize)
-        );
-
-        const snapshot = await getDocs(q);
-        let docs = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        }));
-
-        return {
-          data: docs,
-          lastVisible: snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null,
-        };
-      } catch (err) {
-        return { error: err };
-      }
-    },
-    []
-  );
+  const getOnlyCollectionData = queryCollection;
 
   const getCollectionWithSubcollections = useCallback(
     async ({
@@ -422,6 +355,8 @@ export const FirebaseProvider = (props) => {
       // Optional override per subcollection: { monthlyBilling: { field: 'createdAt', direction: 'asc' } }
       subcollectionOrder = {},
     } = {}) => {
+      // Only derivable when we actually fetch the billing subcollection
+      const derivesLatestBilling = subcollections.includes('monthlyBilling');
       try {
         // --- Parent collection (ordered) ---
         const colRef = collection(firebaseCloudFirestore, collectionName);
@@ -435,19 +370,24 @@ export const FirebaseProvider = (props) => {
           ...docSnap.data(),
         }));
 
-        // Enrich with latest monthlyBilling doc
-        const enriched = await Promise.allSettled(
-          baseDocs.map(async (d) => {
-            const latestBilling = await getLatestMonthlyBilling(d.id, collectionName);
-            return { ...d, monthlyBillingLatest: latestBilling };
-          })
-        );
-        baseDocs = enriched.map((res, i) =>
-          res.status === 'fulfilled' ? res.value : { ...baseDocs[i], monthlyBillingLatest: null }
-        );
-
         if (!subcollections.length) {
-          return { data: baseDocs.map(({ _ref, ...rest }) => rest) };
+          // Nothing to derive it from, so fetch it directly
+          const enriched = await Promise.allSettled(
+            baseDocs.map(async (d) => ({
+              ...d,
+              monthlyBillingLatest: await getLatestMonthlyBilling(d.id, collectionName),
+            }))
+          );
+          return {
+            data: enriched.map((res, i) => {
+              const value =
+                res.status === 'fulfilled'
+                  ? res.value
+                  : { ...baseDocs[i], monthlyBillingLatest: null };
+              const { _ref, ...rest } = value;
+              return rest;
+            }),
+          };
         }
 
         // Helper: normalize a date-like value to milliseconds for sorting
@@ -481,7 +421,7 @@ export const FirebaseProvider = (props) => {
                       id: d.id,
                       ...d.data(),
                     }));
-                  } catch (orderingErr) {
+                  } catch {
                     // If Firestore can't order (missing field/index), do client-side sort
                     const rawSnap = await getDocs(subRef);
                     const arr = rawSnap.docs.map((d) => ({
@@ -503,7 +443,13 @@ export const FirebaseProvider = (props) => {
             );
 
             const { _ref, ...rest } = parent;
-            return { ...rest, subcollections: subData };
+            return {
+              ...rest,
+              subcollections: subData,
+              monthlyBillingLatest: derivesLatestBilling
+                ? getLatestBilling({ subcollections: subData })
+                : await getLatestMonthlyBilling(parent.id, collectionName),
+            };
           })
         );
 
@@ -584,7 +530,7 @@ export const FirebaseProvider = (props) => {
       return { success: true, data: { id: updatedSnapshot.id, ...updatedSnapshot.data() } };
     } catch (err) {
       console.error('updateDocument error', err);
-      throw new Error(err);
+      throw err;
     }
   }, []);
 
@@ -645,63 +591,7 @@ export const FirebaseProvider = (props) => {
     }
   };
 
-  // ----------------- Realtime Database Generic Helpers ----------------------------------------------------------------
-
-  // realtime Database
-
-  const putDataInRealtimeDatabase = useCallback(async (path, data) => {
-    try {
-      await set(ref(firebaseRealtimeDatabase, path), data);
-      return { success: true };
-    } catch (err) {
-      console.error('setDataAtPath error', err);
-      return { error: err };
-    }
-  }, []); // putDataInRealtimeDatabase("students/",{name:"shivaay",age:4})
-
-  // realtime Database
-  const getDataFromRealtimeDatabase = () => {
-    get(child(ref(firebaseRealtimeDatabase), 'students')).then((snapshot) => {
-      console.log('snapshot value', snapshot.val());
-    });
-  };
-
-  // realtime Database
-  const getRealtimeDataWheneverItChanegs = useCallback((path, callback) => {
-    const pathRef = ref(firebaseRealtimeDatabase, path);
-    const listener = (snapshot) => {
-      try {
-        callback(snapshot.exists() ? snapshot.val() : null);
-      } catch (cbErr) {
-        console.error('subscribeToPath callback error', cbErr);
-      }
-    };
-    onValue(pathRef, listener);
-    // return an unsubscribe function so the caller can cleanup
-    return () => off(pathRef, 'value', listener);
-  }, []);
-
   // ----------------- Auth Helpers --------------------------------------------------------------------------------------
-
-  const signUpUserWithEmailAndPassword = useCallback(async (email, password) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-      return { user: userCredential.user };
-    } catch (err) {
-      console.error('signUp error', err);
-      return { error: err };
-    }
-  }, []);
-
-  const signInUserWithEmailAndPassword = useCallback(async (email, password) => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
-      return { user: userCredential.user };
-    } catch (err) {
-      console.error('signIn error', err);
-      return { error: err };
-    }
-  }, []);
 
   const signInWithGoogle = useCallback(async () => {
     try {
@@ -739,8 +629,6 @@ export const FirebaseProvider = (props) => {
     firebaseAuthError: error,
     firebaseLoggedIn: !!user,
     firebaseSignOut: handleSignOut,
-    firebaseSignUpUserWithEmailAndPassword: signUpUserWithEmailAndPassword,
-    firebaseSignInUserWithEmailAndPassword: signInUserWithEmailAndPassword,
     firebaseSignInWithGoogle: signInWithGoogle,
     firebaseGetAdminData: getAdminData,
 
@@ -756,10 +644,6 @@ export const FirebaseProvider = (props) => {
     editSubCollectionInFireStore,
     getOnlyCollectionData,
 
-    // Realtime DB generics
-    putDataInRealtimeDatabase,
-    getDataFromRealtimeDatabase,
-    getRealtimeDataWheneverItChanegs,
   };
 
   return (

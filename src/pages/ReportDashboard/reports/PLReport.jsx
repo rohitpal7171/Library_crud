@@ -11,6 +11,7 @@ import {
   formatCurrency,
   tsToDate,
 } from '../reportHelpers';
+import { monthLabelValue } from '../../../utils/utils';
 import ExportButtons from '../components/ExportButtons';
 
 export default function PLReport({ students, expenses }) {
@@ -47,7 +48,7 @@ export default function PLReport({ students, expenses }) {
     });
 
     const allKeys = [...new Set([...Object.keys(revenueMap), ...Object.keys(expenseMap)])];
-    allKeys.sort((a, b) => dayjs(a, 'MMM YY').valueOf() - dayjs(b, 'MMM YY').valueOf());
+    allKeys.sort((a, b) => monthLabelValue(a) - monthLabelValue(b));
 
     return allKeys.map((month) => {
       const rev = revenueMap[month] || 0;

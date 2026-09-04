@@ -173,7 +173,7 @@ const StudentAddEdit = ({
           handleClose();
         })
         .catch((err) => {
-          console.log(err);
+          console.error(err);
           setFormLoading(false);
           showSnackbar({ severity: 'error', message: err?.message ?? 'Error Updating Student!' });
         });

@@ -1,14 +1,11 @@
 import dayjs from 'dayjs';
+import {
+  monthLabelValue,
+  formatCurrency,
+  firebaseTimestampToDate as tsToDate,
+} from '../../utils/utils';
 
-export function tsToDate(ts) {
-  if (!ts) return null;
-  if (ts?.seconds != null) return new Date(ts.seconds * 1000);
-  return new Date(ts);
-}
-
-export function formatCurrency(amount) {
-  return `₹${Number(amount || 0).toLocaleString('en-IN')}`;
-}
+export { tsToDate, formatCurrency };
 
 export function flattenBillingDocs(students) {
   const rows = [];
@@ -57,7 +54,7 @@ export function groupAmountByMonth(docs, getDate, getAmount) {
     map[key] = (map[key] || 0) + getAmount(doc);
   });
   return Object.entries(map)
-    .sort(([a], [b]) => dayjs(a, 'MMM YY').valueOf() - dayjs(b, 'MMM YY').valueOf())
+    .sort(([a], [b]) => monthLabelValue(a) - monthLabelValue(b))
     .map(([label, value]) => ({ label, value }));
 }
 

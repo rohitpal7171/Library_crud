@@ -208,14 +208,18 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
 
   const handlePaymentReminder = () => {
     const number = student?.phoneNumber ?? student?.phoneNumber2;
-    if (number) {
-      const text = `Hi, Sweet Payment Reminder from Shivaay Library & Co-working for date: ${formatFirebaseTimestamp(
-        payments[0].nextPaymentDate
-      )}`;
-      sendMessageOnWhatsApp(number, text);
-    } else {
+    if (!number) {
       showSnackbar({ severity: 'error', message: 'Phone Number not found.' });
+      return;
     }
+    if (!payments[0]?.nextPaymentDate) {
+      showSnackbar({ severity: 'error', message: 'No payment history for this student.' });
+      return;
+    }
+    const text = `Hi, Sweet Payment Reminder from Shivaay Library & Co-working for date: ${formatFirebaseTimestamp(
+      payments[0].nextPaymentDate
+    )}`;
+    sendMessageOnWhatsApp(number, text);
   };
 
   const openEditForm = (payment) => {

@@ -56,8 +56,8 @@ export default function AnalyticsDashboard() {
 
   const overdueCount = useMemo(() =>
     activeStudents.filter(s => {
-      if (!s.latestBilling?.nextPaymentDate) return false;
-      const d = tsToDate(s.latestBilling.nextPaymentDate);
+      const d = tsToDate(s.latestBilling?.nextPaymentDate);
+      if (!d) return false;
       return new Date(d.getFullYear(), d.getMonth(), d.getDate()) < todayStart;
     }).length,
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,8 +66,8 @@ export default function AnalyticsDashboard() {
   const dueThisMonth = useMemo(() =>
     activeStudents
       .filter(s => {
-        if (!s.latestBilling?.nextPaymentDate) return false;
-        const d    = tsToDate(s.latestBilling.nextPaymentDate);
+        const d = tsToDate(s.latestBilling?.nextPaymentDate);
+        if (!d) return false;
         const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         return dOnly > weekEnd && dOnly <= monthEnd;
       })

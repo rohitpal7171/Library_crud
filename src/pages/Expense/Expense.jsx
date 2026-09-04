@@ -39,7 +39,7 @@ const Expense = () => {
           setLoading(false);
         })
         .catch((err) => {
-          console.log('Error fetching expense data:', err);
+          console.error('Error fetching expense data:', err);
           setExpenses([]);
           setLoading(false);
         });

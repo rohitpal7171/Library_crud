@@ -76,7 +76,7 @@ const ExpenseList = (props) => {
       } catch (err) {
         setLoading(false);
         showSnackbar({ severity: 'error', message: 'Error Deleting Expense!' });
-        console.log(err);
+        console.error(err);
       }
     },
     [setLoading, firebaseContext, showSnackbar, fetchData]

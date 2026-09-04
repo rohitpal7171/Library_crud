@@ -27,15 +27,12 @@ const firebase = useFirebase();
 await firebase.firebaseSignInWithGoogle()
 // Throws if email not in allowedEmails list
 ```
+The allowlist check is **client-side only** — it runs after sign-in succeeds and gates the UI,
+not the data. Firestore security rules are the real boundary.
 
 ### `firebaseSignOut()`
 ```js
 const { success, error } = await firebase.firebaseSignOut()
-```
-
-### `firebaseSignInUserWithEmailAndPassword(email, password)`
-```js
-const { user, error } = await firebase.firebaseSignInUserWithEmailAndPassword(email, password)
 ```
 
 ### `firebaseGetAdminData()`
@@ -108,7 +105,9 @@ const { data, lastVisible } = await firebase.getDocumentsByQuery({
 ---
 
 ### `getOnlyCollectionData({ collectionName, filters, orderField, orderDirection, pageSize, lastVisible })`
-Same as `getDocumentsByQuery` but **without** subcollection enrichment. Faster when billing data is not needed.
+Same implementation as `getDocumentsByQuery` (both call `queryCollection`) but **without**
+subcollection enrichment. `getDocumentsByQuery` costs one extra read per document, so prefer
+this one unless you actually need `monthlyBillingLatest`.
 
 ```js
 const { data } = await firebase.getOnlyCollectionData({
@@ -123,6 +122,9 @@ const { data } = await firebase.getOnlyCollectionData({
 
 ### `getCollectionWithSubcollections({ collectionName, subcollections, orderField, orderDirection, subcollectionOrder })`
 Fetches all parent docs plus all docs from each named subcollection. Attaches subcollection docs as `subcollections[name]`.
+
+Also attaches `monthlyBillingLatest`, **derived from the already-fetched array** — no extra read.
+Use `getLatestBilling(student)` from `src/utils/utils.js` rather than indexing the array yourself.
 
 ```js
 const { data } = await firebase.getCollectionWithSubcollections({

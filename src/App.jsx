@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useFirebase } from './context/Firebase';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage/HomePage';
@@ -14,16 +13,6 @@ import ReportDashboard from './pages/ReportDashboard/ReportDashboard';
 
 function App() {
   const { firebaseUser, firebaseAuthLoading } = useFirebase() || {};
-
-  useEffect(() => {
-    if (firebaseAuthLoading) return; // wait for auth to resolve
-    if (!firebaseUser) {
-      // not logged in → route to /login or show guest UI
-      console.log('User is logged out');
-    } else {
-      // console.log('User is logged in:', firebaseUser.uid);
-    }
-  }, [firebaseAuthLoading, firebaseUser]);
 
   if (firebaseAuthLoading) return <LinearProgress />;
 
