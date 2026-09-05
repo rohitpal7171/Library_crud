@@ -14,7 +14,12 @@ import {
   LinearProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { formatDate, formatFileSize, safeValue } from '../../utils/utils';
+import {
+  DEFAULT_SUBSCRIPTION_FOR,
+  formatDate,
+  formatFileSize,
+  safeValue,
+} from '../../utils/utils';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { CloudDownloadOutlined, CloudUploadOutlined } from '@mui/icons-material';
 import JSZip from 'jszip';
@@ -200,6 +205,10 @@ export default function StudentDetail({
     { label: 'Phone Number', value: student.phoneNumber || '—' },
     { label: 'ID Proof (Aadhaar)', value: student.aadhaarNumber || '—' },
     { label: 'Timings', value: student.timings || '—' },
+    {
+      label: 'Subscription For',
+      value: student.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
+    },
     {
       label: 'Seat',
       value: student.seatReserved

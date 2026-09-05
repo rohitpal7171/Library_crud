@@ -21,7 +21,7 @@ export default function PLChart({ allBillingDocs, expenses }) {
   const totalExpenses = expensesData.reduce((s, v) => s + v, 0);
   const totalProfit   = totalRevenue - totalExpenses;
 
-  const fmt = v => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+  const fmt = formatCurrency;
 
   const pills = [
     { label: 'Total Revenue',  value: formatCurrency(totalRevenue),  valueColor: 'text-emerald-600', bg: 'bg-emerald-50',  border: 'border-emerald-300' },

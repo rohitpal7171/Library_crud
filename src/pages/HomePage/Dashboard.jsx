@@ -4,6 +4,7 @@ import {
   defaultBoxPadding,
   getLatestBilling,
   financialMonthsWithYear,
+  formatCurrency,
   formatMonthYear,
   fyEndYear,
   fyStartYear,
@@ -394,7 +395,7 @@ const Dashboard = () => {
           label: 'Total Revenue',
           valueFormatter: (v, ctx) => {
             const count = studentCounts[ctx.dataIndex] ?? 0;
-            return `₹${Number(v || 0).toLocaleString()} • ${count} students`;
+            return `${formatCurrency(v)} • ${count} students`;
           },
         },
       ];
@@ -487,7 +488,7 @@ const Dashboard = () => {
               marginBottom: 8,
             }}
           >
-            Total: ₹{total?.toLocaleString()}
+            Total: {formatCurrency(total)}
           </div>
 
           {/* Divider */}
@@ -512,7 +513,7 @@ const Dashboard = () => {
                 }}
               >
                 <span>{cat}</span>
-                <span style={{ fontWeight: 500 }}>₹{val.toLocaleString()}</span>
+                <span style={{ fontWeight: 500 }}>{formatCurrency(val)}</span>
               </div>
             ))}
           </div>
@@ -660,11 +661,11 @@ const Dashboard = () => {
               </Typography>
               <List sx={{ mt: 3 }}>
                 <ListItem
-                  secondaryAction={`₹${
+                  secondaryAction={
                     !currentYearEarningVisibility
-                      ? '****'
-                      : billing.getCurrentYearEarnings().totalRevenue
-                  }`}
+                      ? '₹****'
+                      : formatCurrency(billing.getCurrentYearEarnings().totalRevenue)
+                  }
                 >
                   <ListItemAvatar>
                     <AccountBalanceWallet />
@@ -672,11 +673,11 @@ const Dashboard = () => {
                   <ListItemText primary="Earning" sx={{ color: 'grey' }} />
                 </ListItem>
                 <ListItem
-                  secondaryAction={`₹${
+                  secondaryAction={
                     !currentYearEarningVisibility
-                      ? '****'
-                      : billing.getCurrentYearEarnings().totalBasicFees
-                  }`}
+                      ? '₹****'
+                      : formatCurrency(billing.getCurrentYearEarnings().totalBasicFees)
+                  }
                 >
                   <ListItemAvatar>
                     <Savings />
@@ -684,11 +685,11 @@ const Dashboard = () => {
                   <ListItemText primary="Basic Fee" sx={{ color: 'grey' }} />
                 </ListItem>
                 <ListItem
-                  secondaryAction={`₹${
+                  secondaryAction={
                     !currentYearEarningVisibility
-                      ? '****'
-                      : billing.getCurrentYearEarnings().totalSeatFees
-                  }`}
+                      ? '₹****'
+                      : formatCurrency(billing.getCurrentYearEarnings().totalSeatFees)
+                  }
                 >
                   <ListItemAvatar>
                     <AirlineSeatReclineNormal />
@@ -696,11 +697,11 @@ const Dashboard = () => {
                   <ListItemText primary="Seat Reservation Fee" sx={{ color: 'grey' }} />
                 </ListItem>
                 <ListItem
-                  secondaryAction={`₹${
+                  secondaryAction={
                     !currentYearEarningVisibility
-                      ? '****'
-                      : billing.getCurrentYearEarnings().totalLockerFees
-                  }`}
+                      ? '₹****'
+                      : formatCurrency(billing.getCurrentYearEarnings().totalLockerFees)
+                  }
                 >
                   <ListItemAvatar>
                     <LockClock />
@@ -744,7 +745,7 @@ const Dashboard = () => {
               <Grid item sx={{ width: '100%' }}>
                 <StatCard
                   title="This Month Earning"
-                  count={`₹${(billing.mrr || 0).toLocaleString()}`}
+                  count={formatCurrency(billing.mrr)}
                   loading={loading}
                   icon={CurrencyRupee}
                   iconColor="success"

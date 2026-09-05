@@ -1,4 +1,4 @@
-import { Edit } from '@mui/icons-material';
+import { Delete, Edit } from '@mui/icons-material';
 import {
   Timeline,
   TimelineItem,
@@ -26,6 +26,7 @@ const CustomDynamicTimeline = ({
   position = 'right',
   showTimeOnLeft = false,
   onEditClick,
+  onDeleteClick,
 }) => {
   return (
     <Timeline
@@ -82,9 +83,16 @@ const CustomDynamicTimeline = ({
               <Typography variant="h6" component="span">
                 {event.title}
               </Typography>
-              <IconButton color="primary" onClick={() => onEditClick?.(event)}>
-                <Edit />
-              </IconButton>
+              <Box>
+                <IconButton color="primary" onClick={() => onEditClick?.(event)}>
+                  <Edit />
+                </IconButton>
+                {onDeleteClick && event.canDelete && (
+                  <IconButton color="error" onClick={() => onDeleteClick(event)}>
+                    <Delete />
+                  </IconButton>
+                )}
+              </Box>
             </Box>
             <Typography>{event.description}</Typography>
           </TimelineContent>

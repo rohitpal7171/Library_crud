@@ -231,10 +231,10 @@ export default function RevenueReport({ students }) {
                           {row.paymentBy}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-slate-700">₹{row.basicFee}</td>
-                      <td className="px-4 py-2.5 text-slate-700">₹{row.seatFee}</td>
-                      <td className="px-4 py-2.5 text-slate-700">₹{row.lockerFee}</td>
-                      <td className="px-4 py-2.5 font-semibold text-slate-800">₹{row.total}</td>
+                      <td className="px-4 py-2.5 text-slate-700">{formatCurrency(row.basicFee)}</td>
+                      <td className="px-4 py-2.5 text-slate-700">{formatCurrency(row.seatFee)}</td>
+                      <td className="px-4 py-2.5 text-slate-700">{formatCurrency(row.lockerFee)}</td>
+                      <td className="px-4 py-2.5 font-semibold text-slate-800">{formatCurrency(row.total)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -23,9 +23,14 @@ export const sidebarColors = {
   signOutHoverBg: 'rgba(239,68,68,0.15)',
 };
 
+export const SUBSCRIPTION_FOR = ['Library', 'Co-working'];
+export const DEFAULT_SUBSCRIPTION_FOR = 'Library';
+
 export const defaultMonthlyPaymentSchema = {
   subscriptionType: 'month',
   subscriptionDuration: 1,
+  subscriptionFor: DEFAULT_SUBSCRIPTION_FOR,
+  timings: '6',
   basicFee: 0,
   lockerFee: 0,
   seatFee: 0,
@@ -48,6 +53,7 @@ export const defaultSchemaValues = {
   locker: false,
   lockerNumber: 0,
   timings: '6',
+  subscriptionFor: DEFAULT_SUBSCRIPTION_FOR,
   address: '',
   documents: [],
   studentProfile: '',
@@ -91,12 +97,15 @@ export const formatFileSize = (bytes) => {
 export const formatDate = (s) => {
   if (!s) return '—';
   try {
-    const d = new Date(s);
-    if (isNaN(d.getTime())) return s;
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const d = firebaseTimestampToDate(s);
+    if (d) {
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+    // Never return an object — React crashes if you try to show one.
+    return typeof s === 'object' ? '—' : String(s);
   } catch (e) {
     console.error('error while formatting date', e);
-    return s;
+    return '—';
   }
 };
 
@@ -262,7 +271,7 @@ export const buildPaymentReminderMessage = (student) => {
     ``,
     `This is a gentle reminder that your library subscription is due:`,
     ``,
-    `💳 Amount Due : *₹${amount.toLocaleString()}*`,
+    `💳 Amount Due : *${formatCurrency(amount)}*`,
     `📅 Due Date   : *${dueDate}*`,
     ``,
     `Please renew at your earliest convenience so your favourite study spot stays reserved for you! 😊`,
@@ -317,18 +326,31 @@ export const shareStudentListOnWhatsApp = (title, students, options = {}) => {
         )
       : '—';
     const amount = s.due_amount || 0;
-    return `${i + 1}. ${s.studentName} — ₹${amount.toLocaleString()} (Due: ${dueDate})`;
+    return `${i + 1}. ${s.studentName} — ${formatCurrency(amount)} (Due: ${dueDate})`;
   });
 
   const total = students.reduce((sum, s) => sum + (s.due_amount || 0), 0);
-  const footer = `💰 *${totalLabel}: ₹${total.toLocaleString()}*`;
+  const footer = `💰 *${totalLabel}: ${formatCurrency(total)}*`;
 
   openWhatsApp(buildWhatsAppMessage(title, rows, { emoji, footer }));
 };
 
 export const safeValue = (val) => (val ? val : '--');
 
-export const formatCurrency = (amount) => `₹${Number(amount || 0).toLocaleString('en-IN')}`;
+// Rules for the Basic Fee box, shared by the student form and the payment form.
+// Ticking "Allow Zero basic fees" lets the fee be 0 or left empty.
+export const basicFeeRules = (allowZero) => ({
+  required: allowZero ? false : 'Basic fee is required',
+  validate: (v) => {
+    if (allowZero) return Number(v || 0) >= 0 || 'Enter a valid amount';
+    return Number(v) > 0 || 'Must be greater than 0';
+  },
+});
+
+export const formatAmount = (amount) =>
+  Number(amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+export const formatCurrency = (amount) => `₹${formatAmount(amount)}`;
 
 export const showSubscriptionType = (type) => {
   return type === 'month' ? 'Monthly' : 'Yearly';
@@ -389,9 +411,8 @@ export const financialMonthsWithYear = [
   ...financialMonthOrder.slice(9).map((m) => `${m} ${fyStartYear + 1}`), // Jan–Mar
 ];
 
-// Sortable value for a 'MMM YY' display label (e.g. 'Jun 25' → 24306).
-// dayjs cannot parse 'MMM YY' without the customParseFormat plugin — it silently
-// falls back to Date parsing and yields year 2001 for every label.
+// Turns a label like 'Jun 25' into a number you can sort by.
+// Do NOT use dayjs for this — it reads every label as year 2001.
 export const monthLabelValue = (label) => {
   const [m, y] = String(label ?? '').split(' ');
   const monthIndex = monthOrder.indexOf(m);
@@ -399,11 +420,14 @@ export const monthLabelValue = (label) => {
   return (2000 + Number(y)) * 12 + monthIndex;
 };
 
-// The most recent monthlyBilling entry for a student, by createdAt (paymentDate as
-// fallback). Single source of truth — callers used to disagree on what "latest" meant.
+// A deleted payment is only hidden, not erased. It keeps deleted: true.
+export const isDeletedBilling = (bill) => bill?.deleted === true;
+
+// The student's newest payment. Always use this — never monthlyBilling[0].
 export const getLatestBilling = (student) => {
-  const bills = student?.subcollections?.monthlyBilling;
-  if (!Array.isArray(bills) || !bills.length) return null;
+  const all = student?.subcollections?.monthlyBilling;
+  const bills = Array.isArray(all) ? all.filter((b) => !isDeletedBilling(b)) : null;
+  if (!bills || !bills.length) return null;
   const at = (b) =>
     firebaseTimestampToDate(b?.createdAt ?? b?.paymentDate)?.getTime() ?? -Infinity;
   return bills.reduce((latest, bill) => (at(bill) > at(latest) ? bill : latest));

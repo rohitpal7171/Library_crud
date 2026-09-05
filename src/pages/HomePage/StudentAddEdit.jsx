@@ -23,7 +23,14 @@ import { useFirebase } from '../../context/Firebase';
 import CustomButton from '../../components/customComponents/CustomButton';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import { uploadToCloudinary } from '../../database/fileStorage/cloudinary';
-import { computeNextPaymentDate, defaultSchemaValues, formatDate } from '../../utils/utils';
+import {
+  basicFeeRules,
+  computeNextPaymentDate,
+  DEFAULT_SUBSCRIPTION_FOR,
+  defaultSchemaValues,
+  formatDate,
+  SUBSCRIPTION_FOR,
+} from '../../utils/utils';
 
 const MAX_FILES = 5;
 
@@ -35,12 +42,19 @@ const StudentAddEdit = ({
   fetchStudentData,
   serverFilters,
 }) => {
-  const { control, handleSubmit, reset, setValue, watch, formState } = useForm({
+  const { control, handleSubmit, reset, setValue, watch, formState, trigger } = useForm({
     defaultValues: defaultSchemaValues,
   });
   const { errors } = formState;
   const [files, setFiles] = useState([]);
   const [formLoading, setFormLoading] = useState(false);
+  const [allowZeroBasicFee, setAllowZeroBasicFee] = useState(false);
+
+  // Ticking the checkbox does not change the fee field, so the form never re-checks it and
+  // the old error stays on screen. Re-check it here, but only after a failed submit.
+  useEffect(() => {
+    if (formState.isSubmitted) trigger('monthlyBilling.basicFee');
+  }, [allowZeroBasicFee, formState.isSubmitted, trigger]);
 
   const firebaseContext = useFirebase();
 
@@ -65,6 +79,7 @@ const StudentAddEdit = ({
     } else {
       reset(defaultSchemaValues);
       setFiles([]);
+      setAllowZeroBasicFee(false);
     }
   }, [type, editData, reset]);
 
@@ -107,8 +122,12 @@ const StudentAddEdit = ({
       const modifiedData = {
         ...data,
         documents: [],
+        // The first payment copies the student's subscription and timings so they match.
         monthlyBilling: {
           ...data.monthlyBilling,
+          basicFee: Number(data.monthlyBilling?.basicFee || 0),
+          subscriptionFor: data.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
+          timings: data.timings ?? data.monthlyBilling?.timings,
           nextPaymentDate: nextDue,
           paymentDate: data.dateOfJoining,
         },
@@ -297,6 +316,34 @@ const StudentAddEdit = ({
                 )}
               />
             </Grid>
+
+            {/* On Add this sits with the other subscription fields below. */}
+            {type === 'EDIT' && (
+              <Grid item size={{ xs: 6, sm: 3 }}>
+                <Typography sx={labelSx}>Subscription For</Typography>
+                <Controller
+                  name="subscriptionFor"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      fullWidth
+                      size="small"
+                      value={field.value || DEFAULT_SUBSCRIPTION_FOR}
+                      error={!!errors.subscriptionFor}
+                      helperText={errors.subscriptionFor?.message || ''}
+                    >
+                      {SUBSCRIPTION_FOR.map((option) => (
+                        <MenuItem key={option} value={option}>
+                          {option}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
+              </Grid>
+            )}
 
             <Grid item size={{ xs: 6, sm: 3 }}>
               <Typography sx={labelSx}>Gender</Typography>
@@ -605,6 +652,30 @@ const StudentAddEdit = ({
                   />
                 </Grid>
                 <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
+                  <Typography sx={labelSx}>Subscription For</Typography>
+                  <Controller
+                    name="subscriptionFor"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        select
+                        fullWidth
+                        size="small"
+                        value={field.value || DEFAULT_SUBSCRIPTION_FOR}
+                        error={!!errors.subscriptionFor}
+                        helperText={errors.subscriptionFor?.message || ''}
+                      >
+                        {SUBSCRIPTION_FOR.map((option) => (
+                          <MenuItem key={option} value={option}>
+                            {option}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
                   <Typography sx={labelSx}>Payment Method</Typography>
                   <Controller
                     name="monthlyBilling.paymentBy"
@@ -645,10 +716,7 @@ const StudentAddEdit = ({
                   <Controller
                     name="monthlyBilling.basicFee"
                     control={control}
-                    rules={{
-                      required: 'Basic fee is required',
-                      validate: (v) => Number(v) > 0 || 'Must be greater than 0',
-                    }}
+                    rules={basicFeeRules(allowZeroBasicFee)}
                     render={({ field }) => (
                       <TextField
                         {...field}
@@ -659,6 +727,17 @@ const StudentAddEdit = ({
                         helperText={errors?.monthlyBilling?.basicFee?.message || ''}
                       />
                     )}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={allowZeroBasicFee}
+                        onChange={(e) => setAllowZeroBasicFee(e.target.checked)}
+                      />
+                    }
+                    label="Allow Zero basic fees"
+                    slotProps={{ typography: { fontSize: 13 } }}
                   />
                 </Grid>
                 {seatReservedValue && (

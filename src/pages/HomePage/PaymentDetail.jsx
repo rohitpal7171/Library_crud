@@ -3,7 +3,15 @@ import { useFirebase } from '../../context/Firebase';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import {
   Box,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Drawer,
+  FormControlLabel,
   Grid,
   IconButton,
   LinearProgress,
@@ -13,17 +21,20 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Close, ThumbUpAltOutlined, WhatsApp } from '@mui/icons-material';
+import { Close, ThumbUpAltOutlined, WarningAmber, WhatsApp } from '@mui/icons-material';
 import CustomDynamicTimeline from '../../components/customComponents/CustomDynamicTimeline';
 import {
+  basicFeeRules,
   computeNextPaymentDate,
   dateToString,
+  DEFAULT_SUBSCRIPTION_FOR,
   defaultMonthlyPaymentSchema,
   formatDate,
   formatFirebaseTimestamp,
   labelSx,
   sendMessageOnWhatsApp,
   showSubscriptionType,
+  SUBSCRIPTION_FOR,
 } from '../../utils/utils';
 import { useForm, Controller } from 'react-hook-form';
 import CustomButton from '../../components/customComponents/CustomButton';
@@ -31,11 +42,19 @@ import CustomButton from '../../components/customComponents/CustomButton';
 export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, serverFilters }) => {
   const firebaseContext = useFirebase();
   const { showSnackbar } = useSnackbar();
-  const { control, handleSubmit, reset, watch, formState, setValue } = useForm({
-    defaultValues: {
+  // A new payment starts with the student's current subscription and timings.
+  const billingDefaults = useCallback(
+    () => ({
       ...defaultMonthlyPaymentSchema,
+      subscriptionFor: student?.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
+      timings: student?.timings || defaultMonthlyPaymentSchema.timings,
       paymentDate: '',
-    },
+    }),
+    [student?.subscriptionFor, student?.timings]
+  );
+
+  const { control, handleSubmit, reset, watch, formState, setValue, trigger } = useForm({
+    defaultValues: billingDefaults(),
   });
   const { errors } = formState;
 
@@ -43,6 +62,13 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [skipNextPaymentDateUpdate, setSkipNextPaymentDateUpdate] = useState(false);
+  const [allowZeroBasicFee, setAllowZeroBasicFee] = useState(false);
+
+  // Same as the student form: the checkbox does not touch the fee field, so re-check it.
+  useEffect(() => {
+    if (formState.isSubmitted) trigger('basicFee');
+  }, [allowZeroBasicFee, formState.isSubmitted, trigger]);
+  const [paymentPendingDelete, setPaymentPendingDelete] = useState(null);
 
   const subType = watch('subscriptionType');
   const subDuration = watch('subscriptionDuration');
@@ -127,6 +153,11 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
           value: payment?.paymentDate ? formatDate(payment.paymentDate) : 'N/A',
         },
         { label: 'Subscription Duration', value: payment?.subscriptionDuration ?? '1' },
+        {
+          label: 'Subscription For',
+          value: payment?.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
+        },
+        { label: 'Timings', value: payment?.timings ?? '—' },
         { label: 'Basic Fees', value: payment?.basicFee ?? 0 },
         { label: 'Locker Reservation Fee', value: payment?.lockerFee ?? 0 },
         { label: 'Seat Reservation Fee', value: payment?.seatFee ?? 0 },
@@ -145,20 +176,45 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
           value: payment?.paymentBy ?? 'CASH',
         },
       ]),
+      canDelete: payments.length > 1,
       icon: <ThumbUpAltOutlined />,
       color: 'success',
     }));
   }, [payments]);
 
   const handleClickCancel = () => {
-    reset({
-      ...defaultMonthlyPaymentSchema,
-      paymentDate: '',
-    });
+    reset(billingDefaults());
     setSelectedPayment(null);
+    setAllowZeroBasicFee(false);
+  };
+
+  // We don't erase the payment. We mark it deleted:true and hide it everywhere,
+  // so it can be brought back if someone deletes the wrong one.
+  const confirmDeletePayment = async () => {
+    const target = paymentPendingDelete;
+    setPaymentPendingDelete(null);
+    if (!target?.id) return;
+    setLoading(true);
+    try {
+      await firebaseContext.editSubCollectionInFireStore(
+        `students/${student.id}`,
+        'monthlyBilling',
+        target.id,
+        { deleted: true, deletedAt: new Date().toISOString() }
+      );
+      showSnackbar({ severity: 'success', message: 'Payment Deleted Successfully!' });
+      if (selectedPayment?.id === target.id) handleClickCancel();
+      await fetchPaymentDetails();
+      fetchStudentData?.(serverFilters);
+    } catch (err) {
+      showSnackbar({ severity: 'error', message: err?.message ?? 'Failed to delete payment' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submit = async (values) => {
+    values = { ...values, basicFee: Number(values.basicFee || 0) };
     const monthlyBilling = {
       ...values,
       nextPaymentDate: nextPaymentDate,
@@ -225,9 +281,12 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
   const openEditForm = (payment) => {
     setSelectedPayment(payment);
     setSkipNextPaymentDateUpdate(true);
+    setAllowZeroBasicFee(Number(payment?.basicFee ?? 0) === 0);
     reset({
       subscriptionType: payment?.subscriptionType ?? 'month',
       subscriptionDuration: payment?.subscriptionDuration ?? 1,
+      subscriptionFor: payment?.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
+      timings: payment?.timings ?? student?.timings ?? defaultMonthlyPaymentSchema.timings,
       paymentBy: payment?.paymentBy ?? 'CASH',
       nextPaymentDate: payment?.nextPaymentDate,
       paymentDate: payment?.paymentDate,
@@ -297,6 +356,47 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             />
           </Grid>
           <Grid item size={{ xs: 6, sm: 4 }}>
+            <Typography sx={labelSx}>Subscription For</Typography>
+            <Controller
+              name="subscriptionFor"
+              control={control}
+              rules={{ required: 'Subscription for is required' }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  fullWidth
+                  size="small"
+                  error={!!errors?.subscriptionFor}
+                  helperText={errors?.subscriptionFor?.message || ''}
+                >
+                  {SUBSCRIPTION_FOR.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+          </Grid>
+          <Grid item size={{ xs: 6, sm: 4 }}>
+            <Typography sx={labelSx}>Timings</Typography>
+            <Controller
+              name="timings"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  placeholder="6 hours"
+                  fullWidth
+                  size="small"
+                  error={!!errors?.timings}
+                  helperText={errors?.timings?.message || ''}
+                />
+              )}
+            />
+          </Grid>
+          <Grid item size={{ xs: 6, sm: 4 }}>
             <Typography sx={labelSx}>Payment Method</Typography>
             <Controller
               name="paymentBy"
@@ -337,10 +437,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             <Controller
               name="basicFee"
               control={control}
-              rules={{
-                required: 'Basic fee is required',
-                validate: (v) => Number(v) > 0 || 'Must be greater than 0',
-              }}
+              rules={basicFeeRules(allowZeroBasicFee)}
               render={({ field }) => (
                 <TextField
                   {...field}
@@ -351,6 +448,17 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
                   helperText={errors?.basicFee?.message || ''}
                 />
               )}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={allowZeroBasicFee}
+                  onChange={(e) => setAllowZeroBasicFee(e.target.checked)}
+                />
+              }
+              label="Allow Zero basic fees"
+              slotProps={{ typography: { fontSize: 13 } }}
             />
           </Grid>
           <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
@@ -502,13 +610,41 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
             {loading ? (
               <LinearProgress sx={{ my: 2 }} />
             ) : (
-              <CustomDynamicTimeline events={getPaymentStatusList()} onEditClick={openEditForm} />
+              <CustomDynamicTimeline
+                events={getPaymentStatusList()}
+                onEditClick={openEditForm}
+                onDeleteClick={setPaymentPendingDelete}
+              />
             )}
           </Box>
           {/* Payment History Ends  */}
           {/* Body Ends */}
         </Box>
       </Drawer>
+
+      <Dialog open={!!paymentPendingDelete} onClose={() => setPaymentPendingDelete(null)}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningAmber color="error" />
+          Are you sure you want to delete this payment?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            The payment recorded on{' '}
+            <strong>
+              {paymentPendingDelete?.paymentDate
+                ? formatDate(paymentPendingDelete.paymentDate)
+                : formatFirebaseTimestamp(paymentPendingDelete?.createdAt)}
+            </strong>{' '}
+            will be removed from this student&apos;s history and from all revenue totals.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPaymentPendingDelete(null)}>No, keep it</Button>
+          <Button color="error" variant="contained" onClick={confirmDeletePayment}>
+            Yes, delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Fragment>
   );
 };

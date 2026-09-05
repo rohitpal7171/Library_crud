@@ -12,7 +12,7 @@ import {
 import { Fragment, useMemo } from 'react';
 import { CurrencyRupee } from '@mui/icons-material';
 import { Spin } from 'antd';
-import { defaultBoxPadding, formatDate, safeValue } from '../../utils/utils';
+import { defaultBoxPadding, formatAmount, formatDate, safeValue } from '../../utils/utils';
 import { exportToExcel } from '../../utils/exportUtils';
 import { FileDownload } from '@mui/icons-material';
 
@@ -160,7 +160,7 @@ const NormalPaymentList = ({ data, loading }) => {
                       <TableCell align="right">
                         {total ? (
                           <div className="table-cell-display-flex table-cell-display-flex-right">
-                            <CurrencyRupee fontSize="5px" /> {safeValue(total)}
+                            <CurrencyRupee fontSize="5px" /> {formatAmount(total)}
                           </div>
                         ) : (
                           '-'
@@ -182,22 +182,22 @@ const NormalPaymentList = ({ data, loading }) => {
                   </TableCell>
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
-                      <CurrencyRupee fontSize="10px" /> {safeValue(footerTotals.basic)}
+                      <CurrencyRupee fontSize="10px" /> {formatAmount(footerTotals.basic)}
                     </div>
                   </TableCell>
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
-                      <CurrencyRupee fontSize="10px" /> {safeValue(footerTotals.seat)}
+                      <CurrencyRupee fontSize="10px" /> {formatAmount(footerTotals.seat)}
                     </div>
                   </TableCell>
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
-                      <CurrencyRupee fontSize="10px" /> {safeValue(footerTotals.locker)}
+                      <CurrencyRupee fontSize="10px" /> {formatAmount(footerTotals.locker)}
                     </div>
                   </TableCell>
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
-                      <CurrencyRupee fontSize="10px" /> {safeValue(footerTotals.grand)}
+                      <CurrencyRupee fontSize="10px" /> {formatAmount(footerTotals.grand)}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -13,6 +13,7 @@ import { Empty } from 'antd';
 import {
   buildPaymentReminderMessage,
   defaultBoxBorderRadius,
+  formatCurrency,
   formatDate,
   getDueDateDisplay,
   sendMessageOnWhatsApp,
@@ -174,7 +175,7 @@ export default function MiniStudentList({
                     }}
                     onClick={() => handlePaymentClick?.(student)}
                   >
-                    ₹{amountKey ? student[amountKey] || 0 : student.due_amount || 0}
+                    {formatCurrency(amountKey ? student[amountKey] : student.due_amount)}
                   </Typography>
 
                   <Typography

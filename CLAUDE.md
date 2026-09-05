@@ -83,6 +83,20 @@ npm test          # utils self-check (assert-based, no framework)
 - Realtime Database was removed — it was never configured and had no callers
 - `getLatestBilling(student)` in `src/utils/utils.js` is the single definition of "the latest
   monthly billing doc". Never take `subcollections.monthlyBilling[0]` directly
+- **Deleting a payment only hides it.** The doc stays in Firestore with `deleted: true`.
+  Three read functions strip these out — `getCollectionWithSubcollections`,
+  `getSubcollectionDocumentsByStudentId` and `getLatestMonthlyBilling` — so reports, revenue
+  and analytics skip them without doing anything themselves. Filter in JS, **not** with a
+  Firestore `where`: old docs have no `deleted` field, so a `where` would hide them all.
+  A student must always keep at least one payment.
+- **Show money with `formatCurrency()`** (or `formatAmount()` where a ₹ icon is already on
+  screen). Adding fees together can produce `165050.000000003`; these round it to 2 decimals.
+- **Use `formatDate()` for dates, never `new Date()` directly.** Old records store dates as
+  Firestore Timestamps, new ones as `'YYYY-MM-DD'` text. `formatDate` handles both and never
+  returns an object (React crashes if you try to show one).
+- **New fields:** `subscriptionFor` (`'Library'` or `'Co-working'`) on students and on each
+  payment; `timings` on payments too. Old records don't have them, so always fall back to a
+  default when reading.
 - `dayjs` has **no plugins registered**. `dayjs(str, 'MMM YY')` silently misparses — use
   `monthLabelValue()` from `src/utils/utils.js` to sort `MMM YY` labels
 - `getDocumentsByQuery` and `getOnlyCollectionData` are one implementation (`queryCollection`);

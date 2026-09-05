@@ -13,7 +13,7 @@ import {
   TableFooter,
 } from '@mui/material';
 import { Fragment, useMemo, useState } from 'react';
-import { defaultBoxPadding, formatDate, safeValue } from '../../utils/utils';
+import { defaultBoxPadding, formatAmount, formatDate, safeValue } from '../../utils/utils';
 import { CurrencyRupee, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import { Spin } from 'antd';
 
@@ -98,7 +98,7 @@ const PaymentList = (props) => {
           <TableCell align="right">
             {totalBasicFees ? (
               <div className="table-cell-display-flex table-cell-display-flex-right">
-                <CurrencyRupee fontSize="5px" /> {safeValue(totalBasicFees)}
+                <CurrencyRupee fontSize="5px" /> {formatAmount(totalBasicFees)}
               </div>
             ) : (
               '-'
@@ -107,7 +107,7 @@ const PaymentList = (props) => {
           <TableCell align="right">
             {totalSeatFees ? (
               <div className="table-cell-display-flex table-cell-display-flex-right">
-                <CurrencyRupee fontSize="5px" /> {safeValue(totalSeatFees)}
+                <CurrencyRupee fontSize="5px" /> {formatAmount(totalSeatFees)}
               </div>
             ) : (
               '-'
@@ -116,7 +116,7 @@ const PaymentList = (props) => {
           <TableCell align="right">
             {totalLockerFees ? (
               <div className="table-cell-display-flex table-cell-display-flex-right">
-                <CurrencyRupee fontSize="5px" /> {safeValue(totalLockerFees)}
+                <CurrencyRupee fontSize="5px" /> {formatAmount(totalLockerFees)}
               </div>
             ) : (
               '-'
@@ -125,7 +125,7 @@ const PaymentList = (props) => {
           <TableCell align="right">
             {grandTotal ? (
               <div className="table-cell-display-flex table-cell-display-flex-right">
-                <CurrencyRupee fontSize="5px" /> {safeValue(grandTotal)}
+                <CurrencyRupee fontSize="5px" /> {formatAmount(grandTotal)}
               </div>
             ) : (
               '-'
@@ -249,26 +249,26 @@ const PaymentList = (props) => {
 
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
-                      <CurrencyRupee fontSize="10px" /> {safeValue(footerTotals.basic)}
+                      <CurrencyRupee fontSize="10px" /> {formatAmount(footerTotals.basic)}
                     </div>
                   </TableCell>
 
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
-                      <CurrencyRupee fontSize="10px" /> {safeValue(footerTotals.seat)}
+                      <CurrencyRupee fontSize="10px" /> {formatAmount(footerTotals.seat)}
                     </div>
                   </TableCell>
 
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
                       <CurrencyRupee fontSize="10px" />
-                      {safeValue(footerTotals.locker)}
+                      {formatAmount(footerTotals.locker)}
                     </div>
                   </TableCell>
 
                   <TableCell align="right" className="table-footer">
                     <div className="table-cell-display-flex table-cell-display-flex-right font-bold">
-                      <CurrencyRupee fontSize="10px" /> {safeValue(footerTotals.grand)}
+                      <CurrencyRupee fontSize="10px" /> {formatAmount(footerTotals.grand)}
                     </div>
                   </TableCell>
                 </TableRow>

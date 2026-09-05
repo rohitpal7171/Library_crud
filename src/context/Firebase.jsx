@@ -7,7 +7,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { getLatestBilling } from '../utils/utils';
+import { getLatestBilling, isDeletedBilling } from '../utils/utils';
 import {
   getFirestore,
   collection,
@@ -230,18 +230,25 @@ export const FirebaseProvider = (props) => {
     const colRef = collection(firebaseCloudFirestore, basePath);
 
     try {
-      // Fallback to createdAt desc
-      const q2 = query(colRef, orderBy('createdAt', 'desc'), limit(1));
+      // Get 5 and pick the first one that isn't deleted.
+      // ponytail: if a student's last 5 payments are all deleted, this finds none.
+      const q2 = query(colRef, orderBy('createdAt', 'desc'), limit(5));
       const s2 = await getDocs(q2);
-      if (!s2.empty) return { id: s2.docs[0].id, ...s2.docs[0].data() };
+      const live = s2.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => !isDeletedBilling(d));
+      if (live.length) return live[0];
     } catch {
       console.error('failed to fetch latest monthly billing doc for studentId:', studentId);
     }
 
-    // Last fallback — grab any one doc
+    // Last fallback — grab any live doc
     try {
-      const s3 = await getDocs(query(colRef, limit(1)));
-      if (!s3.empty) return { id: s3.docs[0].id, ...s3.docs[0].data() };
+      const s3 = await getDocs(query(colRef, limit(5)));
+      const live = s3.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => !isDeletedBilling(d));
+      if (live.length) return live[0];
     } catch {
       console.error('failed to fetch any monthly billing doc for studentId:', studentId);
     }
@@ -249,8 +256,8 @@ export const FirebaseProvider = (props) => {
     return null;
   };
 
-  // Single implementation behind both public names. `enrichWithLatestBilling` costs one
-  // extra read per document, so only the student list asks for it.
+  // One function used by both names below.
+  // enrichWithLatestBilling adds the newest payment, but costs 1 extra read per student.
   const queryCollection = useCallback(
     async ({
       collectionName = 'students',
@@ -355,7 +362,7 @@ export const FirebaseProvider = (props) => {
       // Optional override per subcollection: { monthlyBilling: { field: 'createdAt', direction: 'asc' } }
       subcollectionOrder = {},
     } = {}) => {
-      // Only derivable when we actually fetch the billing subcollection
+      // We can only work out the newest payment if we actually load the payments.
       const derivesLatestBilling = subcollections.includes('monthlyBilling');
       try {
         // --- Parent collection (ordered) ---
@@ -371,7 +378,7 @@ export const FirebaseProvider = (props) => {
         }));
 
         if (!subcollections.length) {
-          // Nothing to derive it from, so fetch it directly
+          // No payments loaded, so fetch the newest one separately.
           const enriched = await Promise.allSettled(
             baseDocs.map(async (d) => ({
               ...d,
@@ -417,17 +424,15 @@ export const FirebaseProvider = (props) => {
 
                   try {
                     subSnap = await getDocs(subQ);
-                    subData[subName] = subSnap.docs.map((d) => ({
-                      id: d.id,
-                      ...d.data(),
-                    }));
+                    subData[subName] = subSnap.docs
+                      .map((d) => ({ id: d.id, ...d.data() }))
+                      .filter((d) => subName !== 'monthlyBilling' || !isDeletedBilling(d));
                   } catch {
                     // If Firestore can't order (missing field/index), do client-side sort
                     const rawSnap = await getDocs(subRef);
-                    const arr = rawSnap.docs.map((d) => ({
-                      id: d.id,
-                      ...d.data(),
-                    }));
+                    const arr = rawSnap.docs
+                      .map((d) => ({ id: d.id, ...d.data() }))
+                      .filter((d) => subName !== 'monthlyBilling' || !isDeletedBilling(d));
 
                     subData[subName] = arr.sort((a, b) => {
                       const aT = toMillis(a?.[field]);
@@ -492,7 +497,9 @@ export const FirebaseProvider = (props) => {
       }
 
       const snap = await getDocs(qy);
-      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const docs = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => subcollectionName !== 'monthlyBilling' || !isDeletedBilling(d));
       const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
 
       return { docs, nextCursor };
