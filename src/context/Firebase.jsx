@@ -7,7 +7,12 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { getLatestBilling, isDeletedBilling } from '../utils/utils';
+import {
+  DEFAULT_RECEIPT_PREFIX,
+  getLatestBilling,
+  isDeletedBilling,
+  RECEIPT_SEQUENCE_KEY,
+} from '../utils/utils';
 import {
   getFirestore,
   collection,
@@ -119,7 +124,7 @@ export const FirebaseProvider = (props) => {
     []
   );
 
-  async function getNextHumanId(db, sequenceKey) {
+  async function getNextHumanId(db, sequenceKey, prefix = HUMAN_ID_PREFIX) {
     const seqRef = doc(db, 'sequences', sequenceKey);
 
     const humanId = await runTransaction(db, async (tx) => {
@@ -129,7 +134,7 @@ export const FirebaseProvider = (props) => {
       const width = seq.width || INITIAL_HUMAN_ID_WIDTH;
 
       // Build the display ID, e.g. SHY_0001
-      const id = `${HUMAN_ID_PREFIX}${String(next).padStart(width, '0')}`;
+      const id = `${prefix}${String(next).padStart(width, '0')}`;
 
       // If crossing current width (e.g., 9999 -> 10000), bump stored width
       const nextWidth = next >= Math.pow(10, width) ? width + 1 : width;
@@ -139,7 +144,7 @@ export const FirebaseProvider = (props) => {
         {
           next: next + 1,
           width: nextWidth,
-          prefix: HUMAN_ID_PREFIX,
+          prefix,
           updatedAt: serverTimestamp(),
         },
         { merge: true }
@@ -150,6 +155,41 @@ export const FirebaseProvider = (props) => {
 
     return humanId;
   }
+
+  // Receipt numbering. Its own sequences/ doc, so editing the next receipt number
+  // in Settings never touches the students counter.
+  const getNextReceiptNo = useCallback(
+    (prefix = DEFAULT_RECEIPT_PREFIX) =>
+      getNextHumanId(firebaseCloudFirestore, RECEIPT_SEQUENCE_KEY, prefix),
+    []
+  );
+
+  // The stored state of the receipt counter, for the Settings form to show and edit.
+  // Deliberately lets errors throw: null means "no counter yet, start at 1", and a
+  // swallowed error returning null would silently reset live numbering to 1.
+  const getReceiptNumbering = useCallback(async () => {
+    const snap = await getDoc(doc(firebaseCloudFirestore, 'sequences', RECEIPT_SEQUENCE_KEY));
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  }, []);
+
+  // Moves the counter to wherever the admin typed. Deliberately not a transaction —
+  // "start from 251" must land on exactly 251, not read-modify-write.
+  const updateReceiptNumbering = useCallback(async ({ next, prefix }) => {
+    // The form validates these, but this is the last stop before live numbering is
+    // overwritten, so refuse anything that would make getNextHumanId fall back to 1.
+    const nextNumber = Number(next);
+    if (!Number.isInteger(nextNumber) || nextNumber < 1) {
+      throw new Error('Next receipt number must be a whole number of 1 or more.');
+    }
+    if (!prefix) throw new Error('Receipt prefix is required.');
+
+    await setDoc(
+      doc(firebaseCloudFirestore, 'sequences', RECEIPT_SEQUENCE_KEY),
+      { next: nextNumber, prefix, updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+    return { success: true };
+  }, []);
 
   // cloud Database - to add document with data in collection
   const createDataInFireStore = useCallback(
@@ -639,6 +679,11 @@ export const FirebaseProvider = (props) => {
     firebaseSignInWithGoogle: signInWithGoogle,
     firebaseGetAdminData: getAdminData,
 
+    // Receipt numbering
+    getNextReceiptNo,
+    getReceiptNumbering,
+    updateReceiptNumbering,
+
     // Firestore generics
     createDataInFireStore,
     makeSubCollectionInFireStore,
@@ -650,7 +695,6 @@ export const FirebaseProvider = (props) => {
     getCollectionWithSubcollections,
     editSubCollectionInFireStore,
     getOnlyCollectionData,
-
   };
 
   return (

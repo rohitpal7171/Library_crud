@@ -10,6 +10,7 @@ import Expense from './pages/Expense/Expense';
 import PaymentPage from './pages/PaymentDashboard/PaymentPage';
 import AnalyticsDashboard from './pages/AnalyticsDashboard/AnalyticsDashboard';
 import ReportDashboard from './pages/ReportDashboard/ReportDashboard';
+import SettingsPage from './pages/Settings/SettingsPage';
 
 function App() {
   const { firebaseUser, firebaseAuthLoading } = useFirebase() || {};
@@ -28,6 +29,7 @@ function App() {
         <Route path="payments" element={<PaymentPage />} />
         <Route path="analytics" element={<AnalyticsDashboard />} />
         <Route path="reports" element={<ReportDashboard />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       {/* Catch-all: redirect unknown routes */}
       <Route path="*" element={<Navigate to={firebaseUser ? '/' : '/login'} replace />} />

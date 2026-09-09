@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useFirebase } from '../../context/Firebase';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import {
@@ -35,7 +35,10 @@ import {
   sendMessageOnWhatsApp,
   showSubscriptionType,
   SUBSCRIPTION_FOR,
+  buildReceiptModel,
+  DEFAULT_RECEIPT_PREFIX,
 } from '../../utils/utils';
+import { generateReceiptPdf, imageUrlToDataUrl } from '../../utils/receiptPdf';
 import { useForm, Controller } from 'react-hook-form';
 import CustomButton from '../../components/customComponents/CustomButton';
 
@@ -69,6 +72,10 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
     if (formState.isSubmitted) trigger('basicFee');
   }, [allowZeroBasicFee, formState.isSubmitted, trigger]);
   const [paymentPendingDelete, setPaymentPendingDelete] = useState(null);
+  // The ref is the real guard — it flips before the first await, so a fast double click
+  // can never spend two receipt numbers. The state exists only to show the spinner.
+  const receiptBusy = useRef(false);
+  const [receiptBusyId, setReceiptBusyId] = useState(null);
 
   const subType = watch('subscriptionType');
   const subDuration = watch('subscriptionDuration');
@@ -176,11 +183,94 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
           value: payment?.paymentBy ?? 'CASH',
         },
       ]),
+      receiptLoading: receiptBusyId === payment.id,
+      // Only one receipt runs at a time, so the other rows disable instead of
+      // silently doing nothing when clicked.
+      receiptDisabled: !!receiptBusyId,
       canDelete: payments.length > 1,
       icon: <ThumbUpAltOutlined />,
       color: 'success',
     }));
-  }, [payments]);
+  }, [payments, receiptBusyId]);
+
+  // A receipt number is only spent when a receipt is actually issued, so older payments
+  // get theirs on the first print and keep it on every reprint.
+  const handleGenerateReceipt = async (event) => {
+    // The timeline hands back the whole billing doc; its id is what we write the number onto.
+    const paymentId = event?.id;
+    // No id means nothing to write to, and a second click would spend a number twice.
+    if (!paymentId || receiptBusy.current) return;
+    // Claim the lock now, before the first await, so the guard above can never be raced.
+    receiptBusy.current = true;
+    // Tell the timeline which row is working, so the button shows a spinner and disables.
+    setReceiptBusyId(paymentId);
+    try {
+      // Both reads are independent, so pay for one round trip instead of two.
+      const [admin, sequence] = await Promise.all([
+        // The admin doc carries the receipt header, the terms and the logo URL.
+        firebaseContext.firebaseGetAdminData(),
+        // Read the counter fresh, so a prefix changed in Settings applies immediately.
+        // This throws on a read failure, which aborts before any number is spent —
+        // minting with a guessed prefix would store the wrong number permanently.
+        firebaseContext.getReceiptNumbering(),
+      ]);
+
+      // Reprints must reproduce the original, so an existing number always wins.
+      let receiptNo = event?.receiptNo;
+      // Nothing stored means this payment has never been printed before.
+      if (!receiptNo) {
+        // Burn the next number transactionally — this is the only place a number is spent.
+        receiptNo = await firebaseContext.getNextReceiptNo(
+          // Fall back to the default prefix if Settings has never been saved.
+          sequence?.prefix || DEFAULT_RECEIPT_PREFIX
+        );
+        // Persist it on the billing doc so the number survives and reprints stay identical.
+        await firebaseContext.editSubCollectionInFireStore(
+          // Receipt numbers live with the payment they belong to, not on the student.
+          `students/${student.id}`,
+          'monthlyBilling',
+          paymentId,
+          { receiptNo }
+        );
+      }
+
+      // jsPDF cannot take a URL, so the Cloudinary logo has to become raw bytes first.
+      const logo = await imageUrlToDataUrl(admin?.profile_image);
+      // Everything is resolved by now, so this only lays out text and downloads the file.
+      generateReceiptPdf(
+        // One pure step turns payment + student + settings into the exact printed strings.
+        buildReceiptModel({
+          // The freshly minted number is not on the event object yet, so merge it in.
+          payment: { ...event, receiptNo },
+          // Supplies the name; seat and locker still come from this payment fees.
+          student,
+          // Undefined here is fine — buildReceiptModel falls back to the defaults.
+          settings: admin?.receipt,
+        }),
+        logo
+      );
+
+      // Patch just this payment instead of refetching. A refetch swaps the timeline for a
+      // loading spinner and remounts it, which loses your place and makes it unclear which
+      // receipt was just generated. Firestore already has the number; only this copy was stale.
+      if (!event?.receiptNo) {
+        setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, receiptNo } : p)));
+      }
+
+      // Say which receipt was produced, so a long payment list stays unambiguous.
+      showSnackbar({
+        severity: 'success',
+        message: `Receipt ${receiptNo} downloaded for ${student?.studentName ?? 'student'}.`,
+      });
+    } catch (err) {
+      // A failed print must say so — a silently missing download looks like a broken button.
+      showSnackbar({ severity: 'error', message: err?.message ?? 'Could not generate receipt' });
+    } finally {
+      // Release in finally, or one failure would block every later receipt in this session.
+      receiptBusy.current = false;
+      setReceiptBusyId(null);
+    }
+  };
 
   const handleClickCancel = () => {
     reset(billingDefaults());
@@ -614,6 +704,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
                 events={getPaymentStatusList()}
                 onEditClick={openEditForm}
                 onDeleteClick={setPaymentPendingDelete}
+                onReceiptClick={handleGenerateReceipt}
               />
             )}
           </Box>

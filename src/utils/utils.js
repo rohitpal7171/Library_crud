@@ -428,7 +428,65 @@ export const getLatestBilling = (student) => {
   const all = student?.subcollections?.monthlyBilling;
   const bills = Array.isArray(all) ? all.filter((b) => !isDeletedBilling(b)) : null;
   if (!bills || !bills.length) return null;
-  const at = (b) =>
-    firebaseTimestampToDate(b?.createdAt ?? b?.paymentDate)?.getTime() ?? -Infinity;
+  const at = (b) => firebaseTimestampToDate(b?.createdAt ?? b?.paymentDate)?.getTime() ?? -Infinity;
   return bills.reduce((latest, bill) => (at(bill) > at(latest) ? bill : latest));
+};
+
+// --- Fee receipt -------------------------------------------------------------
+// The receipt counter is its own sequences/ doc so its next value can be edited
+// in Settings without touching the students counter.
+export const RECEIPT_SEQUENCE_KEY = 'receipts';
+export const DEFAULT_RECEIPT_PREFIX = 'SLCOW_';
+
+// Fallbacks only — the real values live on the admin doc and are edited in Settings.
+export const DEFAULT_RECEIPT_SETTINGS = {
+  address: 'C-30, Milap Nagar, Uttam Nagar, New Delhi - 110059',
+  email: 'Shivaaylibrary98@gmail.com',
+  phones: '9810433369 / 8527688876',
+  terms: [
+    'Library operating hours: Monday to Saturday - 8:30 AM to 8:30 PM; Sunday - 8:30 AM to 4:30 PM.',
+    'Fees once paid are strictly non-refundable.',
+    'No adjustment or extension of paid fees/dates will be permitted for any reason, including absence, holidays, personal reasons, or early discontinuation.',
+    'Subscription validity is as stated on this receipt and is subject to library rules and availability of reserved facilities.',
+    'This is a computer-generated receipt and does not require a signature.',
+  ].join('\n'),
+};
+
+// Terms are stored as one bullet per line, so the settings form stays a plain textarea.
+export const receiptTermsList = (terms) =>
+  String(terms ?? '')
+    .split('\n')
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^[\u2022*-]\s*/, '')
+        .trim()
+    )
+    .filter(Boolean);
+
+export const paymentTotal = (payment) =>
+  Number(payment?.basicFee || 0) + Number(payment?.seatFee || 0) + Number(payment?.lockerFee || 0);
+
+// Everything the receipt prints, resolved once so the PDF code only lays out text.
+export const buildReceiptModel = ({ payment = {}, student = {}, settings = {} }) => {
+  const org = { ...DEFAULT_RECEIPT_SETTINGS, ...settings };
+  const timings = payment?.timings ?? student?.timings;
+
+  return {
+    receiptNo: payment?.receiptNo || '—',
+    paidOn: formatDate(payment?.paymentDate),
+    studentName: student?.studentName || '—',
+    subscriptionFor:
+      payment?.subscriptionFor || student?.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
+    // timings is a duration in hours per day, not a clock time.
+    timings: defaultCheckValue(timings) ? `${timings} hrs` : '—',
+    nextDueDate: formatDate(payment?.nextPaymentDate),
+    // What this payment actually covered — not the student's standing flags.
+    seatReserved: Number(payment?.seatFee || 0) > 0,
+    lockerReserved: Number(payment?.lockerFee || 0) > 0,
+    amountPaid: paymentTotal(payment),
+    modeOfPayment: payment?.paymentBy || 'Cash',
+    org: { address: org.address, email: org.email, phones: org.phones },
+    terms: receiptTermsList(org.terms),
+  };
 };

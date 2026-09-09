@@ -1,4 +1,4 @@
-import { Delete, Edit } from '@mui/icons-material';
+import { Delete, Edit, ReceiptLong } from '@mui/icons-material';
 import {
   Timeline,
   TimelineItem,
@@ -8,7 +8,7 @@ import {
   TimelineDot,
   TimelineOppositeContent,
 } from '@mui/lab';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
 
 const PALETTE_KEYS = [
   'inherit',
@@ -27,6 +27,7 @@ const CustomDynamicTimeline = ({
   showTimeOnLeft = false,
   onEditClick,
   onDeleteClick,
+  onReceiptClick,
 }) => {
   return (
     <Timeline
@@ -84,6 +85,28 @@ const CustomDynamicTimeline = ({
                 {event.title}
               </Typography>
               <Box>
+                {onReceiptClick && (
+                  <Tooltip
+                    title={
+                      event.receiptLoading
+                        ? 'Generating receipt…'
+                        : event.receiptDisabled
+                          ? 'Another receipt is generating…'
+                          : 'Download receipt'
+                    }
+                  >
+                    {/* A disabled button fires no events, so Tooltip needs a wrapper to listen on. */}
+                    <span>
+                      <IconButton
+                        color="primary"
+                        disabled={!!event.receiptLoading || !!event.receiptDisabled}
+                        onClick={() => onReceiptClick(event)}
+                      >
+                        {event.receiptLoading ? <CircularProgress size={20} /> : <ReceiptLong />}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                )}
                 <IconButton color="primary" onClick={() => onEditClick?.(event)}>
                   <Edit />
                 </IconButton>

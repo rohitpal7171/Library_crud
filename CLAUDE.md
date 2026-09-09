@@ -39,6 +39,7 @@ npm test          # utils self-check (assert-based, no framework)
 | `/payments` | `PaymentPage` | Auth required |
 | `/analytics` | `AnalyticsDashboard` | Auth required |
 | `/reports` | `ReportDashboard` | Auth required |
+| `/settings` | `SettingsPage` | Auth required |
 | `*` | Redirect | `/` if logged in, `/login` if not |
 
 ## Authentication
@@ -101,6 +102,21 @@ npm test          # utils self-check (assert-based, no framework)
   `monthLabelValue()` from `src/utils/utils.js` to sort `MMM YY` labels
 - `getDocumentsByQuery` and `getOnlyCollectionData` are one implementation (`queryCollection`);
   the former adds `monthlyBillingLatest` at the cost of one extra read per document
+- **Fee receipts** are generated per payment from the timeline in `PaymentDetail.jsx`.
+  The printed text comes from `buildReceiptModel()` in `src/utils/utils.js`; `receiptPdf.js`
+  only lays it out. Seat/Locker say Yes when **that payment** had a seat/locker fee — the
+  student-level flags are deliberately ignored. `timings` is a duration, so it prints as
+  `6 hrs`, not a clock time.
+- **Receipt numbers live in `sequences/receipts`**, separate from `sequences/students`, so
+  the next receipt number can be changed in Settings without touching student IDs. A number
+  is spent on first print and stored as `receiptNo` on the billing doc, so reprints match.
+  `getReceiptNumbering()` **throws** on a read failure — returning an error object would
+  look like a fresh counter and let a Save reset live numbering to 1.
+  After a first print, patch that one payment in local state — **never call**
+  `fetchPaymentDetails()` there. It replaces the timeline with a spinner and remounts it,
+  so the admin loses track of which receipt they just generated.
+- **jsPDF has no ₹ glyph** (built-in fonts are WinAnsi). Anything drawn into a PDF must use
+  `Rs.` — `formatCurrency()` is for the screen only.
 
 ## Subdirectory References
 
@@ -115,4 +131,5 @@ npm test          # utils self-check (assert-based, no framework)
 | `src/pages/AnalyticsDashboard/` | Analytics page: summary cards, occupancy, P&L, distributions + helpers |
 | `src/pages/ReportDashboard/` | Report page: revenue, expense, P&L, overdue, student reports + export |
 | `src/pages/Common/` | Shared layout: Navbar, Sidebar, upload dialog, mini student list |
+| `src/pages/Settings/` | Receipt info tab: org details, T&C, receipt numbering |
 | `src/components/customComponents/` | Reusable UI components and their props |

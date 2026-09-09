@@ -13,6 +13,10 @@ import {
   DEFAULT_SUBSCRIPTION_FOR,
   SUBSCRIPTION_FOR,
   basicFeeRules,
+  buildReceiptModel,
+  receiptTermsList,
+  paymentTotal,
+  DEFAULT_RECEIPT_SETTINGS,
 } from './utils.js';
 
 // 'MMM YY' labels must sort oldest to newest, even across a year change.
@@ -101,7 +105,12 @@ console.log('utils self-check passed');
 
   // All deleted = same as no payments, and no crash.
   const allDeleted = {
-    subcollections: { monthlyBilling: [{ id: 'a', deleted: true }, { id: 'b', deleted: true }] },
+    subcollections: {
+      monthlyBilling: [
+        { id: 'a', deleted: true },
+        { id: 'b', deleted: true },
+      ],
+    },
   };
   assert.equal(getLatestBilling(allDeleted), null);
 
@@ -171,3 +180,92 @@ console.log('render-safety self-check passed');
 }
 
 console.log('zero-fee rule self-check passed');
+
+// Terms are typed as free text, so the receipt has to cope with blank lines and
+// bullet characters the user pasted in.
+{
+  assert.deepEqual(receiptTermsList(''), []);
+  assert.deepEqual(receiptTermsList(null), []);
+  assert.deepEqual(receiptTermsList('  Only one  '), ['Only one']);
+  // Pasted terms often arrive indented — the bullet must still come off.
+  assert.deepEqual(receiptTermsList('  - Indented\n\t\u2022 Tabbed'), ['Indented', 'Tabbed']);
+  assert.deepEqual(receiptTermsList('• First\n\n- Second\n   \n* Third'), [
+    'First',
+    'Second',
+    'Third',
+  ]);
+  assert.equal(receiptTermsList(DEFAULT_RECEIPT_SETTINGS.terms).length, 5);
+}
+
+// The receipt describes the payment, not the student's standing flags.
+{
+  assert.equal(paymentTotal(undefined), 0);
+  assert.equal(paymentTotal({ basicFee: 1000, seatFee: 200, lockerFee: 50 }), 1250);
+  assert.equal(paymentTotal({ basicFee: '1000', seatFee: '', lockerFee: null }), 1000);
+
+  const student = {
+    studentName: 'Asha',
+    timings: '8',
+    seatReserved: true,
+    locker: true,
+    subscriptionFor: 'Library',
+  };
+
+  // Seat and locker were not paid for this month — both must read No even though
+  // the student record has both flags on.
+  const noFacilities = buildReceiptModel({
+    payment: { basicFee: 1000, seatFee: 0, lockerFee: 0, paymentBy: 'UPI', timings: '6' },
+    student,
+  });
+  assert.equal(noFacilities.seatReserved, false);
+  assert.equal(noFacilities.lockerReserved, false);
+  assert.equal(noFacilities.amountPaid, 1000);
+  assert.equal(noFacilities.modeOfPayment, 'UPI');
+  assert.equal(noFacilities.timings, '6 hrs');
+  assert.equal(noFacilities.studentName, 'Asha');
+
+  const withFacilities = buildReceiptModel({
+    payment: { basicFee: 1000, seatFee: 200, lockerFee: 50 },
+    student,
+  });
+  assert.equal(withFacilities.seatReserved, true);
+  assert.equal(withFacilities.lockerReserved, true);
+  assert.equal(withFacilities.amountPaid, 1250);
+  // Old payments have no paymentBy, subscriptionFor or timings of their own.
+  assert.equal(withFacilities.modeOfPayment, 'Cash');
+  assert.equal(withFacilities.subscriptionFor, 'Library');
+  assert.equal(withFacilities.timings, '8 hrs');
+}
+
+// Settings come from the admin doc; anything missing falls back to the defaults.
+{
+  const bare = buildReceiptModel({ payment: {}, student: {} });
+  assert.equal(bare.org.email, DEFAULT_RECEIPT_SETTINGS.email);
+  assert.equal(bare.receiptNo, '—');
+  assert.equal(bare.timings, '—');
+  assert.equal(bare.amountPaid, 0);
+
+  const custom = buildReceiptModel({
+    payment: { receiptNo: 'SLCOW_0007' },
+    student: {},
+    settings: { email: 'new@shivaay.in', terms: 'Single rule' },
+  });
+  assert.equal(custom.receiptNo, 'SLCOW_0007');
+  assert.equal(custom.org.email, 'new@shivaay.in');
+  assert.equal(custom.org.address, DEFAULT_RECEIPT_SETTINGS.address);
+  assert.deepEqual(custom.terms, ['Single rule']);
+}
+
+// formatDate must never hand the PDF an object — Firestore Timestamps included.
+{
+  const model = buildReceiptModel({
+    payment: { paymentDate: { seconds: 1_760_000_000 }, nextPaymentDate: '2026-10-06' },
+    student: {},
+  });
+  assert.equal(typeof model.paidOn, 'string');
+  assert.equal(typeof model.nextDueDate, 'string');
+  assert.ok(!model.paidOn.includes('object'));
+  assert.ok(!model.nextDueDate.includes('object'));
+}
+
+console.log('receipt model self-check passed');

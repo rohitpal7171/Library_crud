@@ -40,6 +40,7 @@ students/{docId}
 ├── paymentBy              string    payment method (Cash, UPI, etc.)
 ├── paymentDate            Timestamp when payment was made
 ├── nextPaymentDate        Timestamp computed due date
+├── receiptNo              string    "SLCOW_0001" — written on first receipt print
 ├── studentId              string    parent document ID (redundant reference)
 ├── createdAt              Timestamp
 └── modifiedAt             Timestamp
@@ -84,7 +85,18 @@ sequences/students
 ID format: `{prefix}{next.toString().padStart(width, '0')}`
 Example progression: `SHY_0001` → `SHY_0002` → `SHY_9999` → `SHY_10000`
 
-The generation is a Firestore transaction inside `getNextHumanId()` in `Firebase.jsx` — safe under concurrent writes.
+The generation is a Firestore transaction inside `getNextHumanId(db, key, prefix)` in
+`Firebase.jsx` — safe under concurrent writes.
+
+Receipts use their own document with its own prefix, so editing one counter never
+affects the other:
+
+```
+sequences/receipts
+├── next       number    editable at /settings — the next receipt number
+├── width      number    4 → SLCOW_0001
+└── prefix     string    "SLCOW_"
+```
 
 ---
 
@@ -92,10 +104,15 @@ The generation is a Firestore transaction inside `getNextHumanId()` in `Firebase
 
 ```
 admin/{docId}
-└── profile_image    string    Cloudinary URL for admin profile photo
+├── profile_image    string    Cloudinary URL — also the fee receipt logo
+└── receipt          map       { address, email, phones, terms }
 ```
 
 Only one document expected. Fetched via `firebaseGetAdminData()`.
+
+`receipt` holds the header and terms printed on fee receipts, edited at `/settings`.
+`terms` is a single string, one bullet per line. Missing keys fall back to
+`DEFAULT_RECEIPT_SETTINGS` in `src/utils/utils.js`.
 
 ---
 
