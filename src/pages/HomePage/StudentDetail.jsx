@@ -19,6 +19,7 @@ import {
   formatDate,
   formatFileSize,
   safeValue,
+  paymentTotal,
 } from '../../utils/utils';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { CloudDownloadOutlined, CloudUploadOutlined } from '@mui/icons-material';
@@ -239,7 +240,7 @@ export default function StudentDetail({
         headerName: 'Total Amount',
         flex: 1,
         renderCell: (params) =>
-          Number(params.row.basicFee) + Number(params.row.seatFee) + Number(params.row.lockerFee),
+          paymentTotal(params.row),
       },
       {
         field: 'payment_by',

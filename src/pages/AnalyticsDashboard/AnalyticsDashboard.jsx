@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { CircularProgress } from '@mui/material';
 import { useFirebase } from '../../context/Firebase';
+import { paymentTotal } from '../../utils/utils';
 import { useSnackbar } from '../../components/customComponents/CustomNotifications';
 import SummaryCards from './components/SummaryCards';
 import PaymentAlerts from './components/PaymentAlerts';
@@ -82,7 +83,7 @@ export default function AnalyticsDashboard() {
   const expectedRevenue = useMemo(() =>
     activeStudents.reduce((sum, s) => {
       const b = s.latestBilling;
-      return sum + Number(b?.basicFee || 0) + Number(b?.lockerFee || 0) + Number(b?.seatFee || 0);
+      return sum + paymentTotal(b);
     }, 0),
   [activeStudents]);
 

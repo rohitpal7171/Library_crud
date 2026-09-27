@@ -37,6 +37,7 @@ export const defaultMonthlyPaymentSchema = {
   paymentBy: '',
   nextPaymentDate: '',
   paymentDate: '',
+  amountDue: 0,
 };
 
 export const defaultSchemaValues = {
@@ -257,9 +258,7 @@ export const buildPaymentReminderMessage = (student) => {
         { day: 'numeric', month: 'long', year: 'numeric' }
       )
     : '—';
-  const amount =
-    student.due_amount ||
-    parseInt(bill?.basicFee || 0) + parseInt(bill?.seatFee || 0) + parseInt(bill?.lockerFee || 0);
+  const amount = student.due_amount || paymentTotal(bill);
   const name = student.studentName || 'Student';
 
   return [
@@ -339,11 +338,27 @@ export const safeValue = (val) => (val ? val : '--');
 
 // Rules for the Basic Fee box, shared by the student form and the payment form.
 // Ticking "Allow Zero basic fees" lets the fee be 0 or left empty.
+// Fees come from plain text inputs, so a typed "1,000" reaches Firestore as a string.
+// Number('1,000') is NaN, and that NaN then spreads through every total on every screen.
+const parseAmount = (value) => {
+  const cleaned = String(value ?? '')
+    .replace(/,/g, '')
+    .trim();
+  return cleaned === '' ? NaN : Number(cleaned);
+};
+
+// Reading a stored fee: anything unparseable counts as nothing, never NaN.
+export const toAmount = (value) => {
+  const parsed = parseAmount(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 export const basicFeeRules = (allowZero) => ({
   required: allowZero ? false : 'Basic fee is required',
   validate: (v) => {
-    if (allowZero) return Number(v || 0) >= 0 || 'Enter a valid amount';
-    return Number(v) > 0 || 'Must be greater than 0';
+    // Blank is the "no fee this month" case, which only the checkbox allows.
+    if (allowZero) return !defaultCheckValue(v) || parseAmount(v) >= 0 || 'Enter a valid amount';
+    return parseAmount(v) > 0 || 'Must be greater than 0';
   },
 });
 
@@ -440,6 +455,8 @@ export const DEFAULT_RECEIPT_PREFIX = 'SLCOW_';
 
 // Fallbacks only — the real values live on the admin doc and are edited in Settings.
 export const DEFAULT_RECEIPT_SETTINGS = {
+  name: 'SHIVAAY LIBRARY & CO-WORKING',
+  tagline: 'WHERE FOCUS MEETS COMFORT',
   address: 'C-30, Milap Nagar, Uttam Nagar, New Delhi - 110059',
   email: 'Shivaaylibrary98@gmail.com',
   phones: '9810433369 / 8527688876',
@@ -465,7 +482,40 @@ export const receiptTermsList = (terms) =>
     .filter(Boolean);
 
 export const paymentTotal = (payment) =>
-  Number(payment?.basicFee || 0) + Number(payment?.seatFee || 0) + Number(payment?.lockerFee || 0);
+  toAmount(payment?.basicFee) + toAmount(payment?.seatFee) + toAmount(payment?.lockerFee);
+
+// What is still unpaid on this one payment. 0 — the default — means it was paid in full.
+// This is NOT the renewal amount: the dashboard due lists and the reminder answer
+// "what will they owe next time", which is paymentTotal(), a different question.
+export const billingDueAmount = (bill) => toAmount(bill?.amountDue);
+
+const ONES = [
+  '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+  'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen',
+  'Eighteen', 'Nineteen',
+];
+const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+const underHundred = (n) =>
+  n < 20 ? ONES[n] : `${TENS[Math.floor(n / 10)]}${n % 10 ? ` ${ONES[n % 10]}` : ''}`;
+
+// Indian grouping — crore, lakh, thousand — so 150000 reads "One Lakh Fifty Thousand".
+export const numberToWords = (value) => {
+  const n = Math.floor(Math.abs(Number(value) || 0));
+  if (!n) return 'Zero';
+  const parts = [];
+  const group = (count, label) => count && parts.push(`${underHundred(count)} ${label}`);
+  group(Math.floor(n / 10000000), 'Crore');
+  group(Math.floor((n % 10000000) / 100000), 'Lakh');
+  group(Math.floor((n % 100000) / 1000), 'Thousand');
+  group(Math.floor((n % 1000) / 100), 'Hundred');
+  const rest = n % 100;
+  if (rest) parts.push(underHundred(rest));
+  return parts.join(' ');
+};
+
+// Receipts print the figure and the words, so a total cannot be altered by hand.
+export const amountInWords = (value) => `${numberToWords(value)} Rupees Only`;
 
 // Everything the receipt prints, resolved once so the PDF code only lays out text.
 export const buildReceiptModel = ({ payment = {}, student = {}, settings = {} }) => {
@@ -479,14 +529,23 @@ export const buildReceiptModel = ({ payment = {}, student = {}, settings = {} })
     subscriptionFor:
       payment?.subscriptionFor || student?.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
     // timings is a duration in hours per day, not a clock time.
-    timings: defaultCheckValue(timings) ? `${timings} hrs` : '—',
+    timings: defaultCheckValue(timings) ? `${timings} hours` : '—',
     nextDueDate: formatDate(payment?.nextPaymentDate),
     // What this payment actually covered — not the student's standing flags.
-    seatReserved: Number(payment?.seatFee || 0) > 0,
-    lockerReserved: Number(payment?.lockerFee || 0) > 0,
+    seatReserved: toAmount(payment?.seatFee) > 0,
+    lockerReserved: toAmount(payment?.lockerFee) > 0,
     amountPaid: paymentTotal(payment),
+    amountPaidWords: amountInWords(paymentTotal(payment)),
+    // Same rule as the dashboard due list and the WhatsApp reminder.
+    amountDue: billingDueAmount(payment),
     modeOfPayment: payment?.paymentBy || 'Cash',
-    org: { address: org.address, email: org.email, phones: org.phones },
+    org: {
+      name: org.name,
+      tagline: org.tagline,
+      address: org.address,
+      email: org.email,
+      phones: org.phones,
+    },
     terms: receiptTermsList(org.terms),
   };
 };

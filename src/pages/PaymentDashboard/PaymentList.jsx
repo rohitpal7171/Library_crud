@@ -13,7 +13,14 @@ import {
   TableFooter,
 } from '@mui/material';
 import { Fragment, useMemo, useState } from 'react';
-import { defaultBoxPadding, formatAmount, formatDate, safeValue } from '../../utils/utils';
+import {
+  defaultBoxPadding,
+  formatAmount,
+  formatDate,
+  paymentTotal,
+  toAmount,
+  safeValue,
+} from '../../utils/utils';
 import { CurrencyRupee, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import { Spin } from 'antd';
 
@@ -36,9 +43,9 @@ const PaymentList = (props) => {
         const bills = student?.subcollections?.monthlyBilling || [];
 
         bills.forEach((b) => {
-          acc.basic += Number(b?.basicFee || 0);
-          acc.seat += Number(b?.seatFee || 0);
-          acc.locker += Number(b?.lockerFee || 0);
+          acc.basic += toAmount(b?.basicFee);
+          acc.seat += toAmount(b?.seatFee);
+          acc.locker += toAmount(b?.lockerFee);
         });
 
         return acc;
@@ -58,26 +65,26 @@ const PaymentList = (props) => {
 
     const totalBasicFees = row?.subcollections?.monthlyBilling.length
       ? row?.subcollections?.monthlyBilling?.reduce(
-          (acc, cur) => Number(acc) + Number(cur?.basicFee),
+          (acc, cur) => acc + toAmount(cur?.basicFee),
           0
         )
       : 0;
 
     const totalSeatFees = row?.subcollections?.monthlyBilling.length
       ? row?.subcollections?.monthlyBilling?.reduce(
-          (acc, cur) => Number(acc) + Number(cur?.seatFee),
+          (acc, cur) => acc + toAmount(cur?.seatFee),
           0
         )
       : 0;
 
     const totalLockerFees = row?.subcollections?.monthlyBilling.length
       ? row?.subcollections?.monthlyBilling?.reduce(
-          (acc, cur) => Number(acc) + Number(cur?.lockerFee),
+          (acc, cur) => acc + toAmount(cur?.lockerFee),
           0
         )
       : 0;
 
-    const grandTotal = Number(totalBasicFees) + Number(totalSeatFees) + Number(totalLockerFees);
+    const grandTotal = totalBasicFees + totalSeatFees + totalLockerFees;
 
     return (
       <Fragment>
@@ -182,9 +189,7 @@ const PaymentList = (props) => {
                               {historyRow?.lockerFee ? safeValue(historyRow.lockerFee) : '-'}
                             </TableCell>
                             <TableCell align="right">
-                              {Number(historyRow.basicFee) +
-                                Number(historyRow.seatFee) +
-                                Number(historyRow.lockerFee)}
+                              {paymentTotal(historyRow)}
                             </TableCell>
                           </TableRow>
                         ))

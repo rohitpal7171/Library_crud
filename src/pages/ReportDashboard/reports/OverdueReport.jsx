@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { formatCurrency, tsToDate } from '../reportHelpers';
 import ExportButtons from '../components/ExportButtons';
 import { Phone } from '@mui/icons-material';
-import { formatDate, getLatestBilling } from '../../../utils/utils';
+import { formatDate, getLatestBilling, paymentTotal } from '../../../utils/utils';
 
 export default function OverdueReport({ students }) {
   const today = dayjs();
@@ -17,10 +17,7 @@ export default function OverdueReport({ students }) {
       const daysOverdue = today.diff(due, 'day');
       if (daysOverdue <= 0) return;
 
-      const lastTotal =
-        Number(latest.basicFee || 0) +
-        Number(latest.seatFee || 0) +
-        Number(latest.lockerFee || 0);
+      const lastTotal = paymentTotal(latest);
 
       rows.push({
         studentName: student.studentName,

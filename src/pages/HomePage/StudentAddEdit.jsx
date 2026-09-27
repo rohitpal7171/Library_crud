@@ -28,6 +28,7 @@ import {
   computeNextPaymentDate,
   DEFAULT_SUBSCRIPTION_FOR,
   defaultSchemaValues,
+  toAmount,
   formatDate,
   SUBSCRIPTION_FOR,
 } from '../../utils/utils';
@@ -125,7 +126,10 @@ const StudentAddEdit = ({
         // The first payment copies the student's subscription and timings so they match.
         monthlyBilling: {
           ...data.monthlyBilling,
-          basicFee: Number(data.monthlyBilling?.basicFee || 0),
+          basicFee: toAmount(data.monthlyBilling?.basicFee),
+          seatFee: toAmount(data.monthlyBilling?.seatFee),
+          lockerFee: toAmount(data.monthlyBilling?.lockerFee),
+          amountDue: toAmount(data.monthlyBilling?.amountDue),
           subscriptionFor: data.subscriptionFor || DEFAULT_SUBSCRIPTION_FOR,
           timings: data.timings ?? data.monthlyBilling?.timings,
           nextPaymentDate: nextDue,
@@ -778,6 +782,21 @@ const StudentAddEdit = ({
                     />
                   </Grid>
                 )}
+                <Grid item size={{ xs: 12, sm: 6, md: 2 }}>
+                  <Typography sx={labelSx}>Amount Due</Typography>
+                  <Controller
+                    name="monthlyBilling.amountDue"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        placeholder="e.g., 0"
+                        fullWidth
+                        size="small"
+                      />
+                    )}
+                  />
+                </Grid>
                 <Grid item size={24} sx={{ color: 'red' }}>
                   {nextDue
                     ? `Note: Next payment will be due on ${formatDate(nextDue)}.`

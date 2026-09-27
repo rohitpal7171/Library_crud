@@ -4,6 +4,7 @@ import {
   getLatestBilling,
   formatCurrency,
   firebaseTimestampToDate as tsToDate,
+  paymentTotal,
 } from '../../utils/utils';
 
 export { tsToDate, formatCurrency };
@@ -22,7 +23,7 @@ export function getRevenueByMonth(billingDocs) {
   billingDocs.forEach(doc => {
     if (!doc.paymentDate) return;
     const key = dayjs(tsToDate(doc.paymentDate)).format('MMM YY');
-    const fee = Number(doc.basicFee || 0) + Number(doc.lockerFee || 0) + Number(doc.seatFee || 0);
+    const fee = paymentTotal(doc);
     map[key] = (map[key] || 0) + fee;
   });
   return map;

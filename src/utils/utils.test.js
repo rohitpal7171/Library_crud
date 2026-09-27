@@ -16,6 +16,10 @@ import {
   buildReceiptModel,
   receiptTermsList,
   paymentTotal,
+  toAmount,
+  billingDueAmount,
+  numberToWords,
+  amountInWords,
   DEFAULT_RECEIPT_SETTINGS,
 } from './utils.js';
 
@@ -221,7 +225,7 @@ console.log('zero-fee rule self-check passed');
   assert.equal(noFacilities.lockerReserved, false);
   assert.equal(noFacilities.amountPaid, 1000);
   assert.equal(noFacilities.modeOfPayment, 'UPI');
-  assert.equal(noFacilities.timings, '6 hrs');
+  assert.equal(noFacilities.timings, '6 hours');
   assert.equal(noFacilities.studentName, 'Asha');
 
   const withFacilities = buildReceiptModel({
@@ -234,7 +238,7 @@ console.log('zero-fee rule self-check passed');
   // Old payments have no paymentBy, subscriptionFor or timings of their own.
   assert.equal(withFacilities.modeOfPayment, 'Cash');
   assert.equal(withFacilities.subscriptionFor, 'Library');
-  assert.equal(withFacilities.timings, '8 hrs');
+  assert.equal(withFacilities.timings, '8 hours');
 }
 
 // Settings come from the admin doc; anything missing falls back to the defaults.
@@ -266,6 +270,80 @@ console.log('zero-fee rule self-check passed');
   assert.equal(typeof model.nextDueDate, 'string');
   assert.ok(!model.paidOn.includes('object'));
   assert.ok(!model.nextDueDate.includes('object'));
+}
+
+// Words are printed next to the figure, so a wrong grouping is a wrong receipt.
+{
+  assert.equal(numberToWords(0), 'Zero');
+  assert.equal(numberToWords(7), 'Seven');
+  assert.equal(numberToWords(15), 'Fifteen');
+  assert.equal(numberToWords(90), 'Ninety');
+  assert.equal(numberToWords(101), 'One Hundred One');
+  assert.equal(numberToWords(1000), 'One Thousand');
+  assert.equal(numberToWords(1250), 'One Thousand Two Hundred Fifty');
+  // Indian grouping, not thousands-of-thousands.
+  assert.equal(numberToWords(150000), 'One Lakh Fifty Thousand');
+  assert.equal(numberToWords(10000000), 'One Crore');
+  // Fees can arrive as strings, and rounding noise must not spill into the words.
+  assert.equal(numberToWords('1000'), 'One Thousand');
+  assert.equal(numberToWords(1650.5), 'One Thousand Six Hundred Fifty');
+  assert.equal(amountInWords(1000), 'One Thousand Rupees Only');
+}
+
+// Amount due is what is STILL UNPAID on this payment, and it defaults to 0. It is not the
+// renewal amount — the dashboard due lists and the reminder use paymentTotal() for that.
+{
+  const fees = { basicFee: 1000, seatFee: 200, lockerFee: 50 };
+  assert.equal(defaultMonthlyPaymentSchema.amountDue, 0);
+
+  // Paid in full is the default, and every payment recorded before this field existed.
+  assert.equal(billingDueAmount(fees), 0);
+  assert.equal(billingDueAmount({ ...fees, amountDue: 0 }), 0);
+  assert.equal(billingDueAmount(undefined), 0);
+  assert.equal(billingDueAmount({ ...fees, amountDue: 400 }), 400);
+  assert.equal(billingDueAmount({ ...fees, amountDue: '400' }), 400);
+  assert.equal(billingDueAmount({ ...fees, amountDue: '1,400' }), 1400);
+
+  // A receipt for an old payment must not claim money is still owed.
+  const old = buildReceiptModel({ payment: fees, student: {} });
+  assert.equal(old.amountPaid, 1250);
+  assert.equal(old.amountDue, 0);
+  assert.equal(old.amountPaidWords, 'One Thousand Two Hundred Fifty Rupees Only');
+
+  // A real part payment still prints its balance.
+  const partial = buildReceiptModel({ payment: { ...fees, amountDue: 400 }, student: {} });
+  assert.equal(partial.amountDue, 400);
+
+  // The renewal figure is a different question and still answers the old way.
+  assert.equal(paymentTotal({ ...fees, amountDue: 400 }), 1250);
+}
+
+// Fees are typed into plain text boxes, so "1,000" can reach Firestore as a string.
+// Number('1,000') is NaN, and one NaN turns a whole revenue column into NaN.
+{
+  assert.equal(toAmount('1,000'), 1000);
+  assert.equal(toAmount('1,00,000'), 100000);
+  assert.equal(toAmount(' 500 '), 500);
+  assert.equal(toAmount(500), 500);
+  assert.equal(toAmount('500.5'), 500.5);
+  // Nothing usable counts as nothing — never NaN, which would poison every total.
+  assert.equal(toAmount('abc'), 0);
+  assert.equal(toAmount(''), 0);
+  assert.equal(toAmount(null), 0);
+  assert.equal(toAmount(undefined), 0);
+
+  // A comma in any fee used to make the whole total NaN.
+  assert.equal(paymentTotal({ basicFee: '1,000', seatFee: '200', lockerFee: 50 }), 1250);
+  assert.ok(!Number.isNaN(paymentTotal({ basicFee: '1,000' })));
+  // Missing fields must not produce NaN either.
+  assert.equal(paymentTotal({ basicFee: 1000 }), 1000);
+  assert.equal(billingDueAmount({ basicFee: '1,000', amountDue: '1,200' }), 1200);
+  assert.equal(billingDueAmount({ basicFee: '1,000', amountDue: 'abc' }), 0);
+
+  // The form still refuses a fee that is not a number, but now accepts a comma.
+  const off = basicFeeRules(false);
+  assert.equal(off.validate('1,000'), true);
+  assert.equal(off.validate('abc'), 'Must be greater than 0');
 }
 
 console.log('receipt model self-check passed');

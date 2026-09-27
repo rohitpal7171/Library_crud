@@ -11,7 +11,7 @@ import {
   formatCurrency,
   tsToDate,
 } from '../reportHelpers';
-import { monthLabelValue } from '../../../utils/utils';
+import { monthLabelValue, paymentTotal } from '../../../utils/utils';
 import ExportButtons from '../components/ExportButtons';
 
 export default function PLReport({ students, expenses }) {
@@ -37,7 +37,7 @@ export default function PLReport({ students, expenses }) {
       if (!r.paymentDate) return;
       const key = dayjs(tsToDate(r.paymentDate)).format('MMM YY');
       revenueMap[key] = (revenueMap[key] || 0) +
-        Number(r.basicFee || 0) + Number(r.seatFee || 0) + Number(r.lockerFee || 0);
+        paymentTotal(r);
     });
 
     const expenseMap = {};

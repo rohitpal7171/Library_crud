@@ -9,6 +9,8 @@ import {
   fyEndYear,
   fyStartYear,
   shareStudentListOnWhatsApp,
+  paymentTotal,
+  toAmount,
 } from '../../utils/utils';
 import {
   Box,
@@ -183,7 +185,7 @@ const Dashboard = () => {
   }));
 
   const getEntryTotal = (e = {}) =>
-    Number(e.basicFee || 0) + Number(e.lockerFee || 0) + Number(e.seatFee || 0);
+    paymentTotal(e);
 
   const normalizeMonthKey = (d) => {
     try {
@@ -238,10 +240,7 @@ const Dashboard = () => {
         const isDue = dueDateOnly <= startOfToday;
 
         if (isDue) {
-          const basic = parseInt(bill0.basicFee || 0, 10) || 0;
-          const seat = parseInt(bill0.seatFee || 0, 10) || 0;
-          const locker = parseInt(bill0.lockerFee || 0, 10) || 0;
-          const due_amount = basic + seat + locker;
+          const due_amount = paymentTotal(bill0);
 
           list_of_student.push({
             ...s,
@@ -290,10 +289,7 @@ const Dashboard = () => {
         const isWithinNextWindow = dueDateOnly >= startOfTomorrow && dueDateOnly <= endOfWindow;
 
         if (isWithinNextWindow) {
-          const basic = parseInt(bill0.basicFee || 0, 10) || 0;
-          const seat = parseInt(bill0.seatFee || 0, 10) || 0;
-          const locker = parseInt(bill0.lockerFee || 0, 10) || 0;
-          const due_amount = basic + seat + locker;
+          const due_amount = paymentTotal(bill0);
 
           list_of_student.push({
             ...s,
@@ -309,9 +305,9 @@ const Dashboard = () => {
       return { list_of_student, total_due_amount };
     };
 
-    const basicRevenue = allEntries.reduce((s, e) => s + Number(e.basicFee || 0), 0);
-    const lockerRevenue = allEntries.reduce((s, e) => s + Number(e.lockerFee || 0), 0);
-    const seatRevenue = allEntries.reduce((s, e) => s + Number(e.seatFee || 0), 0);
+    const basicRevenue = allEntries.reduce((s, e) => s + toAmount(e.basicFee), 0);
+    const lockerRevenue = allEntries.reduce((s, e) => s + toAmount(e.lockerFee), 0);
+    const seatRevenue = allEntries.reduce((s, e) => s + toAmount(e.seatFee), 0);
 
     // subscription mix
     const subscriptionMix = allEntries.reduce((acc, e) => {
@@ -348,9 +344,9 @@ const Dashboard = () => {
 
       // Sum totals
       const totalRevenue = entriesInYear.reduce((sum, e) => sum + getEntryTotal(e), 0);
-      const totalBasicFees = entriesInYear.reduce((sum, e) => sum + Number(e.basicFee || 0), 0);
-      const totalSeatFees = entriesInYear.reduce((sum, e) => sum + Number(e.seatFee || 0), 0);
-      const totalLockerFees = entriesInYear.reduce((sum, e) => sum + Number(e.lockerFee || 0), 0);
+      const totalBasicFees = entriesInYear.reduce((sum, e) => sum + toAmount(e.basicFee), 0);
+      const totalSeatFees = entriesInYear.reduce((sum, e) => sum + toAmount(e.seatFee), 0);
+      const totalLockerFees = entriesInYear.reduce((sum, e) => sum + toAmount(e.lockerFee), 0);
 
       return {
         financialYear: `${fyStart.getFullYear()}-${fyEnd.getFullYear()}`,

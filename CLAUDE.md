@@ -90,6 +90,13 @@ npm test          # utils self-check (assert-based, no framework)
   and analytics skip them without doing anything themselves. Filter in JS, **not** with a
   Firestore `where`: old docs have no `deleted` field, so a `where` would hide them all.
   A student must always keep at least one payment.
+- **Read every stored fee through `toAmount()`; never `Number()`.** The fee boxes are plain
+  text, so a typed `"1,000"` used to reach Firestore as a string and `Number('1,000')` is
+  `NaN` — one bad fee turned a whole revenue column, a P&L total or a receipt into `NaN`,
+  and made the receipt print "Seat Reserved: No" for a seat that was paid for. `toAmount`
+  strips commas and falls back to `0`. The three-fee sum lives once, in `paymentTotal()` —
+  don't re-add `basicFee + seatFee + lockerFee` inline. Both forms also coerce fees with
+  `toAmount` on save, so new records are always numbers.
 - **Show money with `formatCurrency()`** (or `formatAmount()` where a ₹ icon is already on
   screen). Adding fees together can produce `165050.000000003`; these round it to 2 decimals.
 - **Use `formatDate()` for dates, never `new Date()` directly.** Old records store dates as
@@ -106,7 +113,8 @@ npm test          # utils self-check (assert-based, no framework)
   The printed text comes from `buildReceiptModel()` in `src/utils/utils.js`; `receiptPdf.js`
   only lays it out. Seat/Locker say Yes when **that payment** had a seat/locker fee — the
   student-level flags are deliberately ignored. `timings` is a duration, so it prints as
-  `6 hrs`, not a clock time.
+  `6 hours`, not a clock time. The amount prints as figures plus words
+  (`Rs. 1,000  (One Thousand Rupees Only)`) via `amountInWords()`.
 - **Receipt numbers live in `sequences/receipts`**, separate from `sequences/students`, so
   the next receipt number can be changed in Settings without touching student IDs. A number
   is spent on first print and stored as `receiptNo` on the billing doc, so reprints match.
@@ -115,6 +123,14 @@ npm test          # utils self-check (assert-based, no framework)
   After a first print, patch that one payment in local state — **never call**
   `fetchPaymentDetails()` there. It replaces the timeline with a spinner and remounts it,
   so the admin loses track of which receipt they just generated.
+- **Two different "due" numbers — don't mix them up.**
+  `billingDueAmount(bill)` is what is **still unpaid on that one payment**. It defaults to
+  `0` (paid in full), which is also what every payment recorded before the field existed
+  reads as. It appears on the fee receipt and in the payment timeline, and nowhere else.
+  The dashboard due lists, the overdue report and the WhatsApp reminder answer a different
+  question — **what the student owes at the next renewal** — and that stays
+  `paymentTotal(bill)`. Putting `billingDueAmount` in those places would show ₹0 for
+  everyone. Neither figure touches revenue, analytics, P&L or reports.
 - **jsPDF has no ₹ glyph** (built-in fonts are WinAnsi). Anything drawn into a PDF must use
   `Rs.` — `formatCurrency()` is for the screen only.
 

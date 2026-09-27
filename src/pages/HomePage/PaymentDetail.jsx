@@ -36,6 +36,8 @@ import {
   showSubscriptionType,
   SUBSCRIPTION_FOR,
   buildReceiptModel,
+  billingDueAmount,
+  toAmount,
   DEFAULT_RECEIPT_PREFIX,
 } from '../../utils/utils';
 import { generateReceiptPdf, imageUrlToDataUrl } from '../../utils/receiptPdf';
@@ -168,6 +170,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
         { label: 'Basic Fees', value: payment?.basicFee ?? 0 },
         { label: 'Locker Reservation Fee', value: payment?.lockerFee ?? 0 },
         { label: 'Seat Reservation Fee', value: payment?.seatFee ?? 0 },
+        { label: 'Amount Due', value: billingDueAmount(payment) },
         {
           label: 'Next Payment Date',
           value: payment?.nextPaymentDate ? (
@@ -304,7 +307,14 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
   };
 
   const submit = async (values) => {
-    values = { ...values, basicFee: Number(values.basicFee || 0) };
+    // Store fees as numbers, so a typed "1,000" can never reach Firestore as a string.
+    values = {
+      ...values,
+      basicFee: toAmount(values.basicFee),
+      seatFee: toAmount(values.seatFee),
+      lockerFee: toAmount(values.lockerFee),
+      amountDue: toAmount(values.amountDue),
+    };
     const monthlyBilling = {
       ...values,
       nextPaymentDate: nextPaymentDate,
@@ -371,7 +381,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
   const openEditForm = (payment) => {
     setSelectedPayment(payment);
     setSkipNextPaymentDateUpdate(true);
-    setAllowZeroBasicFee(Number(payment?.basicFee ?? 0) === 0);
+    setAllowZeroBasicFee(toAmount(payment?.basicFee) === 0);
     reset({
       subscriptionType: payment?.subscriptionType ?? 'month',
       subscriptionDuration: payment?.subscriptionDuration ?? 1,
@@ -383,6 +393,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
       basicFee: payment?.basicFee ?? 0,
       seatFee: payment?.seatFee ?? 0,
       lockerFee: payment?.lockerFee ?? 0,
+      amountDue: payment?.amountDue ?? 0,
     });
   };
 
@@ -581,6 +592,22 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
                   size="small"
                   error={!!errors?.lockerFee}
                   helperText={errors?.lockerFee?.message || ''}
+                />
+              )}
+            />
+          </Grid>
+          <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
+            <Typography sx={labelSx}>Amount Due</Typography>
+            <Controller
+              name="amountDue"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  placeholder="e.g., 0"
+                  fullWidth
+                  size="small"
+                  helperText="Still unpaid on this payment"
                 />
               )}
             />

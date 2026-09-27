@@ -12,7 +12,7 @@ import {
   tsToDate,
 } from '../reportHelpers';
 import ExportButtons from '../components/ExportButtons';
-import { formatDate } from '../../../utils/utils';
+import { formatDate, paymentTotal, toAmount } from '../../../utils/utils';
 
 const PAYMENT_METHODS = ['All', 'Cash', 'UPI', 'Online', 'Cheque', 'Other'];
 
@@ -40,9 +40,9 @@ export default function RevenueReport({ students }) {
     () =>
       filtered.reduce(
         (acc, r) => {
-          acc.basic += Number(r.basicFee || 0);
-          acc.seat += Number(r.seatFee || 0);
-          acc.locker += Number(r.lockerFee || 0);
+          acc.basic += toAmount(r.basicFee);
+          acc.seat += toAmount(r.seatFee);
+          acc.locker += toAmount(r.lockerFee);
           return acc;
         },
         { basic: 0, seat: 0, locker: 0 }
@@ -56,7 +56,7 @@ export default function RevenueReport({ students }) {
       groupAmountByMonth(
         filtered,
         (r) => tsToDate(r.paymentDate),
-        (r) => Number(r.basicFee || 0) + Number(r.seatFee || 0) + Number(r.lockerFee || 0)
+        (r) => paymentTotal(r)
       ),
     [filtered]
   );
@@ -69,7 +69,7 @@ export default function RevenueReport({ students }) {
     basicFee: r.basicFee || 0,
     seatFee: r.seatFee || 0,
     lockerFee: r.lockerFee || 0,
-    total: Number(r.basicFee || 0) + Number(r.seatFee || 0) + Number(r.lockerFee || 0),
+    total: paymentTotal(r),
   }));
 
   const csvColumns = [

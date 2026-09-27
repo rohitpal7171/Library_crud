@@ -12,7 +12,14 @@ import {
 import { Fragment, useMemo } from 'react';
 import { CurrencyRupee } from '@mui/icons-material';
 import { Spin } from 'antd';
-import { defaultBoxPadding, formatAmount, formatDate, safeValue } from '../../utils/utils';
+import {
+  defaultBoxPadding,
+  formatAmount,
+  formatDate,
+  paymentTotal,
+  toAmount,
+  safeValue,
+} from '../../utils/utils';
 import { exportToExcel } from '../../utils/exportUtils';
 import { FileDownload } from '@mui/icons-material';
 
@@ -39,9 +46,9 @@ const NormalPaymentList = ({ data, loading }) => {
   const footerTotals = useMemo(() => {
     const totals = flatRows.reduce(
       (acc, row) => {
-        acc.basic += Number(row?.basicFee || 0);
-        acc.seat += Number(row?.seatFee || 0);
-        acc.locker += Number(row?.lockerFee || 0);
+        acc.basic += toAmount(row?.basicFee);
+        acc.seat += toAmount(row?.seatFee);
+        acc.locker += toAmount(row?.lockerFee);
         return acc;
       },
       { basic: 0, seat: 0, locker: 0 }
@@ -62,7 +69,7 @@ const NormalPaymentList = ({ data, loading }) => {
       basicFee: r.basicFee || 0,
       seatFee: r.seatFee || 0,
       lockerFee: r.lockerFee || 0,
-      total: Number(r.basicFee || 0) + Number(r.seatFee || 0) + Number(r.lockerFee || 0),
+      total: paymentTotal(r),
     }));
     const columns = [
       { key: 'studentName', label: 'Student' },
@@ -121,10 +128,7 @@ const NormalPaymentList = ({ data, loading }) => {
               </TableHead>
               <TableBody>
                 {flatRows.map((row, index) => {
-                  const total =
-                    Number(row?.basicFee || 0) +
-                    Number(row?.seatFee || 0) +
-                    Number(row?.lockerFee || 0);
+                  const total = paymentTotal(row);
                   return (
                     <TableRow key={`${row.humanId}-${row.paymentDate}-${index}`}>
                       <TableCell>{safeValue(row.studentName)}</TableCell>
