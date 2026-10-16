@@ -164,6 +164,11 @@ Never take `student.subcollections.monthlyBilling[0]` directly — four call sit
 that with three different sort orders, two of which sorted on `paymentDate.seconds`, which is
 `undefined` because payment dates are stored as `YYYY-MM-DD` strings.
 
+### `receiptNoLabel(bill) → string`
+The stored `receiptNo` of a payment, or `'Not Generated'` when its receipt was never printed.
+Used by every payment list/detail view — don't re-write the fallback inline. (The printed
+receipt itself uses `'—'` via `buildReceiptModel`; that is a different thing.)
+
 ### `monthLabelValue(label) → number`
 Sortable value for a `'MMM YY'` display label. Returns `-Infinity` for anything unparseable.
 

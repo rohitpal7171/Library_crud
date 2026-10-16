@@ -99,13 +99,15 @@ export const FirebaseProvider = (props) => {
     }
   }, []);
 
+  // Throws on failure. Every caller already has a catch, and returning { error } let a failed
+  // save look like a success — a receipt printed with a number that was never stored.
   const editSubCollectionInFireStore = useCallback(
     async (parentPath, subcollectionName, docId, data) => {
       try {
         // parentPath split into collection and doc id
         const [parentCollection, parentId] = parentPath.split('/');
         if (!parentCollection || !parentId || !docId) {
-          return { error: new Error('Invalid arguments') };
+          throw new Error('Invalid arguments');
         }
 
         const docRef = doc(
@@ -122,7 +124,7 @@ export const FirebaseProvider = (props) => {
         return { id: docId };
       } catch (err) {
         console.error('updateDocumentInSubcollection error', err);
-        return { error: err };
+        throw err;
       }
     },
     []

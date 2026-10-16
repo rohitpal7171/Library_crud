@@ -18,6 +18,7 @@ import {
   paymentTotal,
   toAmount,
   billingDueAmount,
+  receiptNoLabel,
   numberToWords,
   amountInWords,
   DEFAULT_RECEIPT_SETTINGS,
@@ -288,6 +289,14 @@ console.log('zero-fee rule self-check passed');
   assert.equal(numberToWords('1000'), 'One Thousand');
   assert.equal(numberToWords(1650.5), 'One Thousand Six Hundred Fifty');
   assert.equal(amountInWords(1000), 'One Thousand Rupees Only');
+}
+
+// Lists show the stored receipt number, or "Not Generated" for a payment never printed.
+{
+  assert.equal(receiptNoLabel({ receiptNo: 'SLCOW_0007' }), 'SLCOW_0007');
+  assert.equal(receiptNoLabel({}), 'Not Generated');
+  assert.equal(receiptNoLabel({ receiptNo: '' }), 'Not Generated');
+  assert.equal(receiptNoLabel(undefined), 'Not Generated');
 }
 
 // Amount due is what is STILL UNPAID on this payment, and it defaults to 0. It is not the

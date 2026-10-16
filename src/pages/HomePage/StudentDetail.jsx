@@ -20,6 +20,7 @@ import {
   formatFileSize,
   safeValue,
   paymentTotal,
+  receiptNoLabel,
 } from '../../utils/utils';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { CloudDownloadOutlined, CloudUploadOutlined } from '@mui/icons-material';
@@ -247,6 +248,12 @@ export default function StudentDetail({
         headerName: 'Payment Method',
         flex: 1,
         renderCell: (params) => safeValue(params.row.paymentBy),
+      },
+      {
+        field: 'receipt_no',
+        headerName: 'Receipt No.',
+        flex: 1,
+        renderCell: (params) => receiptNoLabel(params.row),
       },
     ];
     return cols;

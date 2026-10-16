@@ -18,6 +18,7 @@ import {
   formatAmount,
   formatDate,
   paymentTotal,
+  receiptNoLabel,
   toAmount,
   safeValue,
 } from '../../utils/utils';
@@ -151,6 +152,7 @@ const PaymentList = (props) => {
                     <TableRow>
                       <TableCell className="table-header">Payment Date</TableCell>
                       <TableCell className="table-header">Payment Method</TableCell>
+                      <TableCell className="table-header">Receipt No.</TableCell>
                       <TableCell className="table-header">Basic Fee</TableCell>
                       <TableCell align="right" className="table-header">
                         Seat Fee
@@ -178,6 +180,9 @@ const PaymentList = (props) => {
                             </TableCell>
                             <TableCell component="th" scope="row">
                               {historyRow?.paymentBy ? historyRow.paymentBy : '-'}
+                            </TableCell>
+                            <TableCell component="th" scope="row">
+                              {receiptNoLabel(historyRow)}
                             </TableCell>
                             <TableCell>
                               {historyRow?.basicFee ? safeValue(historyRow.basicFee) : '-'}

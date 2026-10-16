@@ -166,7 +166,8 @@ await firebase.makeSubCollectionInFireStore('students/abc123', 'monthlyBilling',
 ---
 
 ### `editSubCollectionInFireStore(parentPath, subcollectionName, docId, data)`
-Updates a specific subcollection document.
+Updates a specific subcollection document. **Throws on failure** (it used to return `{ error }`,
+which made a failed save look like a success), so always call it inside `try/catch` or `.catch`.
 
 ```js
 await firebase.editSubCollectionInFireStore('students/abc123', 'monthlyBilling', billingDocId, {

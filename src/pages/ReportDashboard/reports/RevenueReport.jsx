@@ -12,7 +12,7 @@ import {
   tsToDate,
 } from '../reportHelpers';
 import ExportButtons from '../components/ExportButtons';
-import { formatDate, paymentTotal, toAmount } from '../../../utils/utils';
+import { formatDate, paymentTotal, receiptNoLabel, toAmount } from '../../../utils/utils';
 
 const PAYMENT_METHODS = ['All', 'Cash', 'UPI', 'Online', 'Cheque', 'Other'];
 
@@ -66,6 +66,7 @@ export default function RevenueReport({ students }) {
     humanId: r.humanId,
     paymentDate: r.paymentDate ? formatDate(tsToDate(r.paymentDate)) : '-',
     paymentBy: r.paymentBy || '-',
+    receiptNo: receiptNoLabel(r),
     basicFee: r.basicFee || 0,
     seatFee: r.seatFee || 0,
     lockerFee: r.lockerFee || 0,
@@ -77,6 +78,7 @@ export default function RevenueReport({ students }) {
     { key: 'humanId', label: 'ID' },
     { key: 'paymentDate', label: 'Payment Date' },
     { key: 'paymentBy', label: 'Method' },
+    { key: 'receiptNo', label: 'Receipt No.' },
     { key: 'basicFee', label: 'Basic Fee' },
     { key: 'seatFee', label: 'Seat Fee' },
     { key: 'lockerFee', label: 'Locker Fee' },

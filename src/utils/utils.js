@@ -489,6 +489,9 @@ export const paymentTotal = (payment) =>
 // "what will they owe next time", which is paymentTotal(), a different question.
 export const billingDueAmount = (bill) => toAmount(bill?.amountDue);
 
+// A number is only stored on a payment once its receipt is first printed.
+export const receiptNoLabel = (bill) => bill?.receiptNo || 'Not Generated';
+
 const ONES = [
   '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
   'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen',

@@ -37,6 +37,7 @@ import {
   SUBSCRIPTION_FOR,
   buildReceiptModel,
   billingDueAmount,
+  receiptNoLabel,
   toAmount,
   DEFAULT_RECEIPT_PREFIX,
 } from '../../utils/utils';
@@ -185,6 +186,7 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
           label: 'Payment Method',
           value: payment?.paymentBy ?? 'CASH',
         },
+        { label: 'Receipt No.', value: receiptNoLabel(payment) },
       ]),
       receiptLoading: receiptBusyId === payment.id,
       // Only one receipt runs at a time, so the other rows disable instead of
@@ -228,6 +230,8 @@ export const PaymentDetail = ({ open, onClose, student = {}, fetchStudentData, s
           sequence?.prefix || DEFAULT_RECEIPT_PREFIX
         );
         // Persist it on the billing doc so the number survives and reprints stay identical.
+        // This throws on failure, so we stop before printing — a number nobody stored is
+        // skipped, never handed out on a receipt that a reprint could not match.
         await firebaseContext.editSubCollectionInFireStore(
           // Receipt numbers live with the payment they belong to, not on the student.
           `students/${student.id}`,

@@ -17,6 +17,7 @@ import {
   formatAmount,
   formatDate,
   paymentTotal,
+  receiptNoLabel,
   toAmount,
   safeValue,
 } from '../../utils/utils';
@@ -66,6 +67,7 @@ const NormalPaymentList = ({ data, loading }) => {
           )
         : '-',
       paymentBy: r.paymentBy || '-',
+      receiptNo: receiptNoLabel(r),
       basicFee: r.basicFee || 0,
       seatFee: r.seatFee || 0,
       lockerFee: r.lockerFee || 0,
@@ -76,6 +78,7 @@ const NormalPaymentList = ({ data, loading }) => {
       { key: 'humanId', label: 'ID' },
       { key: 'paymentDate', label: 'Payment Date' },
       { key: 'paymentBy', label: 'Method' },
+      { key: 'receiptNo', label: 'Receipt No.' },
       { key: 'basicFee', label: 'Basic Fee (₹)' },
       { key: 'seatFee', label: 'Seat Fee (₹)' },
       { key: 'lockerFee', label: 'Locker Fee (₹)' },
@@ -112,6 +115,7 @@ const NormalPaymentList = ({ data, loading }) => {
                   <TableCell className="table-header">Student</TableCell>
                   <TableCell className="table-header">Payment Date</TableCell>
                   <TableCell className="table-header">Payment Method</TableCell>
+                  <TableCell className="table-header">Receipt No.</TableCell>
                   <TableCell className="table-header" align="right">
                     Basic Fee
                   </TableCell>
@@ -134,6 +138,7 @@ const NormalPaymentList = ({ data, loading }) => {
                       <TableCell>{safeValue(row.studentName)}</TableCell>
                       <TableCell>{row?.paymentDate ? formatDate(row.paymentDate) : '-'}</TableCell>
                       <TableCell>{row?.paymentBy || '-'}</TableCell>
+                      <TableCell>{receiptNoLabel(row)}</TableCell>
                       <TableCell align="right">
                         {row?.basicFee ? (
                           <div className="table-cell-display-flex table-cell-display-flex-right">
@@ -179,7 +184,7 @@ const NormalPaymentList = ({ data, loading }) => {
                   <TableCell className="table-footer">
                     <div className="font-bold">{flatRows.length} Payments</div>
                   </TableCell>
-                  <TableCell className="table-footer" colSpan={2}>
+                  <TableCell className="table-footer" colSpan={3}>
                     <div className="table-cell-display-flex table-cell-display-flex-right">
                       Grand Total
                     </div>
