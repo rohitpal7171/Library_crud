@@ -40,7 +40,11 @@ const firebaseCloudFirestore = getFirestore(firebaseApp);
 
 const googleProvider = new GoogleAuthProvider();
 
-const allowedEmails = ['rohit.pal7171@gmail.com', 'shivaaylibrary98@gmail.com'];
+const allowedEmails = [
+  'rohit.pal7171@gmail.com',
+  'shivaaylibrary98@gmail.com',
+  'mohitsharma22jul1993@gmail.com',
+];
 
 export const useFirebase = () => useContext(FirebaseContext);
 
